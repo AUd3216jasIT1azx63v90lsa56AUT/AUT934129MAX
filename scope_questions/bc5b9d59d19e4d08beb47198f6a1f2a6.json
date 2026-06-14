@@ -1,0 +1,102 @@
+[
+  {
+    "question": "'File Name: src/ActivePool.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_5e33ee9a-277d-4cb9-85e2-48a28ed24d1c?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/BorrowerOperations.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_44a74856-1125-4deb-98a6-a7c492ae103f?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/TroveManager.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_0f4e591c-57f2-4923-ab35-a13cc49370c9?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/StabilityPool.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_1a109b96-e86d-4d32-87a9-41f5cde618bc?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/DefaultPool.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_ac4cefb7-74d4-44e1-ac19-b5b8e6008ddb?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/CollSurplusPool.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_0345b77d-5a65-4e9b-afe2-99e6e4315d8a?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/USDSToken.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_aac34774-779f-44e1-8e97-6656df852d02?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/PriceFeed.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_d4899b5e-67eb-427a-b048-5b0c8df28c22?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/SystemState.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_3630225c-669c-4620-8d88-577b419f33f5?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/SortedTroves.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_c8945e19-5737-43d8-b6c4-d0c9cc9e18ed?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/OracleRateCalculation.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_04fda6c3-4556-4ec6-b6ee-e39b19cd8e04?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/TroveHelper.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_bb130168-887a-4a10-9fee-637078f20f0b?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/SABLE/SableStakingV2.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_0e5fcedf-9131-4036-9a63-eb1643317755?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/SABLE/CommunityIssuance.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_e3ee1324-aeb3-4cdb-bb77-d6c204746f44?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/SABLE/SABLEToken.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_61d75278-48e3-4228-941f-50e9b2a2913a?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/GasPool.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_6d02695d-7d22-4af9-be48-2a78562cab18?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/TimeLock.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_9a2d49d6-8419-4c1f-a77c-fc22e5e77736?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/SableRewarder.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_ab1d8825-ccbc-436c-9700-358cccdec13a?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/BNBTransferScript.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_cd241f67-74d1-4ee3-9152-fd6cc2d140f4?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/Proxy/*.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets a user access rewards they should not receive, enter or manipulate state before rewards are distributed, bypass eligibility or timing rules, claim more rewards than other users with the same entitlement, repeat/replay reward claims, or otherwise gain excess reward value from the protocol'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_6b220ea3-125b-4478-a957-6412a65cb868?mode=deep",
+    "questions_generated": false
+  }
+]
