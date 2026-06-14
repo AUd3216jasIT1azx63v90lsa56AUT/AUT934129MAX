@@ -1,0 +1,38 @@
+[
+  {
+    "question": "[File: 'src/ActivePool.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: sendBNB / receive] Can an unprivileged ATTACKER (receiver contract) under PRECONDITIONS (attacker is the recipient of a sendBNB call triggered by a legitimate liquidation or redemption) trigger CALL_SEQUENCE (attacker's fallback re-enters ActivePool.sendBNB via a path that calls TroveManager.liquidate or BorrowerOperations.closeTrove before the first sendBNB returns), violating INVARIANT (ActivePool.BNB tracker must equal sum of all legitimate outstanding BNB obligations), causing scoped impact: attacker extracts more BNB from ActivePool than their entitlement? Local proof idea: write a Foundry reentrancy test where attacker's receive() calls back into a path that triggers another sendBNB, assert ActivePool.getBNB() < 0 or attacker balance > expected.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_ad3df692-26de-4278-8aa5-2a6d01662786?mode=deep",
+    "timestamp": "2026-06-14 13:41:19.060172",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/ActivePool.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: decreaseUSDSDebt / StabilityPool.offset] Can an unprivileged ATTACKER (StabilityPool depositor who triggers offset) under PRECONDITIONS (StabilityPool.offset is callable only by TroveManager, but ActivePool.decreaseUSDSDebt is callable by StabilityPool directly) trigger CALL_SEQUENCE (attacker deploys a contract that impersonates StabilityPool address and calls activePool.decreaseUSDSDebt directly without a corresponding usdsToken.burn), violating INVARIANT (every call to decreaseUSDSDebt must be paired with an equal USDS burn), causing scoped impact: ActivePool USDSDebt is deflated without burning USDS, enabling future over-withdrawal of BNB? Local proof idea: unit test calling activePool.decreaseUSDSDebt from a mock StabilityPool without burning USDS, assert USDSDebt < actual outstanding debt.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_42f69b89-3262-4777-ae3c-3e0e4b5e5475?mode=deep",
+    "timestamp": "2026-06-14 13:41:31.061515",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/ActivePool.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: receive / BorrowerOperations._activePoolAddColl] Can an unprivileged ATTACKER under PRECONDITIONS (attacker force-sends BNB to ActivePool via selfdestruct, bypassing the receive() guard) trigger CALL_SEQUENCE (attacker selfdestructs a contract with BNB into ActivePool, then opens a trove and closes it, receiving only their own collateral), violating INVARIANT (ActivePool.address(this).balance must equal ActivePool.BNB tracker plus any force-sent dust), causing scoped impact: the force-sent BNB is permanently locked in ActivePool and cannot be extracted, but does the discrepancy allow any accounting path to over-withdraw? Local proof idea: fuzz test with selfdestruct injection, assert no user can withdraw more than their tracked BNB entitlement.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_d1812fc9-e3b8-4402-852f-5af9e6be14f9?mode=deep",
+    "timestamp": "2026-06-14 13:41:43.505521",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/ActivePool.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: increaseUSDSDebt / BorrowerOperations._withdrawUSDS] Can an unprivileged ATTACKER (borrower) under PRECONDITIONS (BorrowerOperations calls activePool.increaseUSDSDebt(netDebtIncrease) where netDebtIncrease includes the borrowing fee, but usdsToken.mint is called with only _USDSAmount excluding the fee) trigger CALL_SEQUENCE (attacker opens trove, observes that ActivePool.USDSDebt increases by netDebt+fee but attacker only receives _USDSAmount USDS, then redeems the full netDebt+fee worth of BNB), violating INVARIANT (USDS minted to borrower must equal USDS that can be used to redeem the corresponding BNB), causing scoped impact: attacker cannot extract extra BNB via this path, but verify the fee USDS minted to sableStaking is correctly accounted in USDSDebt? Local proof idea: unit test asserting usdsToken.totalSupply() == activePool.getUSDSDebt() + defaultPool.getUSDSDebt() after openTrove.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_8f93bbf6-6de5-4280-acc1-9787bdcf7117?mode=deep",
+    "timestamp": "2026-06-14 13:41:57.599456",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/ActivePool.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: sendBNB / TroveManager._sendGasCompensation] Can an unprivileged ATTACKER (liquidator) under PRECONDITIONS (batch liquidation of N troves, totalCollGasCompensation is accumulated across all troves) trigger CALL_SEQUENCE (attacker calls batchLiquidateTroves with a crafted array containing duplicate trove addresses, causing double-counting of gas compensation), violating INVARIANT (totalCollGasCompensation must not exceed 0.5% of total liquidated collateral), causing scoped impact: attacker receives more BNB gas compensation than entitled, draining ActivePool? Local proof idea: unit test batchLiquidateTroves with duplicate addresses, assert liquidator BNB gain <= 0.5% of total collateral.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_b33bab10-9b75-43d9-8377-a029d7a17b46?mode=deep",
+    "timestamp": "2026-06-14 13:42:10.824549",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/ActivePool.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: sendBNB / TroveManager.redeemCollateral] Can an unprivileged ATTACKER (redeemer) under PRECONDITIONS (BOOTSTRAP_PERIOD is 0 days, redemption is immediately available) trigger CALL_SEQUENCE (attacker opens a trove, immediately redeems their own USDS against another trove, receiving BNB at oracle price minus fee, then closes their own trove), violating INVARIANT (redeemer must not receive more BNB value than the USDS they burned plus the redemption fee), causing scoped impact: if oracleRate is 0 and baseRate is near 0, attacker extracts near-zero-fee BNB? Local proof idea: fuzz test with oracleRate=0 and baseRate=0, assert BNBFee >= REDEMPTION_FEE_FLOOR * totalBNBDrawn.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_08f4ee0f-4de9-413d-94ad-87cea93200ad?mode=deep",
+    "timestamp": "2026-06-14 13:42:24.193572",
+    "report_generated": false
+  }
+]
