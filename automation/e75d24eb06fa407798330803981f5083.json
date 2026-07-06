@@ -1,0 +1,134 @@
+[
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV3Address / IUniswapV3Factory.createPool / migration front-run] Can an unprivileged attacker front-run a V3 migration by calling IPancakeV3Factory.createPool(token, WBNB, fee) before migration under the precondition that computeV3Address correctly predicts the pool address, trigger the sequence attacker creates pool at predicted address → sets initial sqrtPriceX96 to manipulated value → migration adds liquidity at manipulated price → attacker extracts value via arbitrage, violating the invariant that migration must add liquidity at the correct initial price, causing scoped impact: attacker captures migration BNB/tokens via price manipulation? Local proof idea: fork BSC, predict V3 pool address, createPool with manipulated price, trigger migration, assert attacker profit from arbitrage.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_4b84400d-e89a-4fbb-9d53-5ef237f035c1?mode=deep",
+    "timestamp": "2026-07-06 18:20:36.365057",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV2Address / computeV3Address / ITokenV2.initialize pools array] Can an unprivileged attacker launch a token via newTokenV2 under the precondition that the token address is such that computeV2Address and computeV3Address return the same address (hash collision), trigger the sequence newTokenV2 → ITokenV2.initialize(pools=[sameAddr, sameAddr]) → only one unique pool in whitelist → other real pools not blocked, violating the invariant that V2 and V3 pool addresses must be distinct and both present in the whitelist, causing scoped impact: attacker exploits the missing pool in the whitelist to farm tokens? Local proof idea: fuzz token addresses to find case where computeV2Address == computeV3Address; verify initialize behavior with duplicate pool addresses.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_b7bd4717-5ddb-45d1-a61b-fb8c8212a49d?mode=deep",
+    "timestamp": "2026-07-06 18:20:48.630511",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV3Address / DEXInfo.v3Deployer / computeAlgebraV3Address] Can an unprivileged attacker exploit the fact that computeV3Address uses factory as the CREATE2 deployer while computeAlgebraV3Address uses deployer (a separate contract) under the precondition that a DEX in MultiDexRouter has v3Deployer != v3Factory (Algebra-style), but the launcher calls computeV3Address(v3Factory, ...) instead of computeAlgebraV3Address(v3Deployer, ...), trigger the sequence newTokenV4 → wrong pool address computed → ITokenV2.initialize with wrong pool → real Algebra pool not blocked, violating the invariant that pool address computation must use the correct deployer for each DEX type, causing scoped impact: attacker farms tokens through the real Algebra pool during anti-farmer window? Local proof idea: unit test computeV3Address(factory, hash, A, B, fee) vs computeAlgebraV3Address(deployer, hash, A, B) for a DEX where deployer != factory; assert different addresses.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_2b210fb1-36e0-456c-a659-bb12ad3ebd73?mode=deep",
+    "timestamp": "2026-07-06 18:21:00.927247",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV2Address / _dexPools / swapExactInput DEX path] Can an unprivileged attacker call swapExactInput(ExactInputParams{inputToken: WBNB, outputToken: launchedToken}) for a DEX-listed token under the precondition that _dexPools[token].pool was set to address(0) or a zero-liquidity pool (due to computeV2Address returning wrong address during migration), trigger the sequence swapExactInput → PORTAL_DEX_ROUTER → swap against zero-liquidity pool → revert or zero output → attacker uses this to grief other users while extracting value via a separate path, violating the invariant that DEX swaps must succeed against a pool with real liquidity, causing scoped impact: attacker extracts value by exploiting the broken DEX routing? Local proof idea: fork BSC, set _dexPools to zero-liquidity pool, call swapExactInput, assert revert or zero output.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_d3a8c64c-9db1-43ad-bca5-f7535b7a841c?mode=deep",
+    "timestamp": "2026-07-06 18:21:13.448372",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV3Address / V4LPFeesCollected / addV4LPLiquidity] Can an unprivileged attacker call addV4LPLiquidity(token, 0, 0) under the precondition that _dexPools[token].pool is a wrong address (computeV3Address with wrong fee), trigger the sequence addV4LPLiquidity → PORTAL_V4_CL_LOCKER → liquidity added to wrong pool → attacker's pre-positioned liquidity in real pool captures all trading fees, violating the invariant that LP liquidity additions must target the pool matching the token's registered pool info, causing scoped impact: attacker captures all LP fees from the real pool by pre-positioning liquidity? Local proof idea: fork BSC, set wrong pool in _dexPools, call addV4LPLiquidity, verify liquidity went to wrong pool; pre-position in real pool and collect fees.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_fe2495cf-4f4e-462b-9f7f-6f833244c669?mode=deep",
+    "timestamp": "2026-07-06 18:21:26.576620",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV2Address / setTokenBeneficiary / BeneficiaryClaimed] Can an unprivileged attacker call setTokenBeneficiary(token, attackerAddress) under the precondition that the token's beneficiary is not yet set and setTokenBeneficiary has no caller restriction, then trigger the sequence setTokenBeneficiary → _tokenBeneficiaries[token] = attacker → collectV4Fees(token) → fees sent to attacker, violating the invariant that only the original token creator can set the beneficiary, causing scoped impact: attacker redirects all LP fee proceeds to their address? Local proof idea: fork BSC, call setTokenBeneficiary as unprivileged caller, then collectV4Fees, assert fees go to attacker.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_ac60cb69-943b-41cb-87e0-cfacbfa41ef7?mode=deep",
+    "timestamp": "2026-07-06 18:21:39.543427",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV3Address / PackedDexPool.fee / swapExactInputV3] Can an unprivileged attacker fuzz the fee parameter in ExactInputV3Params under the precondition that _dexPools[token].fee was set to a wrong value (due to computeV3Address being called with wrong fee during migration), trigger the sequence swapExactInputV3(ExactInputV3Params{fee: realFee}) → PORTAL_DEX_ROUTER → routes to real pool (fee matches) but accounting uses wrong pool's price → attacker exploits price discrepancy, violating the invariant that the fee tier used for routing must match the fee tier stored in _dexPools, causing scoped impact: attacker extracts excess tokens by exploiting fee tier mismatch? Local proof idea: fuzz fee parameter in swapExactInputV3; compare output for fee=2500 vs fee=500 for same token; assert profit opportunity.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_a56cacd5-0588-461a-aae4-eeb261754345?mode=deep",
+    "timestamp": "2026-07-06 18:21:53.159536",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV2Address / IUniswapV2Pair.getReserves / bonding curve DEX threshold] Can an unprivileged attacker manipulate the reserves of the predicted V2 pool (computed via computeV2Address) before migration under the precondition that the DEX threshold check uses the predicted pool's reserves, trigger the sequence attacker adds liquidity to predicted pool → reserves manipulated → DEX threshold check passes prematurely → migration triggered early → attacker captures migration proceeds at below-threshold price, violating the invariant that DEX migration must only occur when the bonding curve reaches the legitimate threshold, causing scoped impact: attacker triggers early migration and captures BNB/tokens? Local proof idea: fork BSC, predict pool address, add liquidity to manipulate reserves, trigger migration, assert early migration and attacker profit.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_b0ac1bf6-bf2b-4d2a-a212-d85e2a5c2df5?mode=deep",
+    "timestamp": "2026-07-06 18:22:08.488776",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV3Address / ITokenV3.initialize / mainPool sentinel] Can an unprivileged attacker launch a TOKEN_V3_PERMIT token via newTokenV7 under the precondition that computeV3Address returns a wrong pool address that equals PCS_INFINITY_VAULT (the mainPool sentinel), trigger the sequence newTokenV7 → ITokenV3.initialize(mainPool=PCS_INFINITY_VAULT, pools=[wrongAddr=PCS_INFINITY_VAULT, ...]) → token transfer constraints bypass (PCS_INFINITY_VAULT is whitelisted) → attacker transfers tokens freely during BondingCurve phase, violating the invariant that token transfers must be restricted during BondingCurve phase, causing scoped impact: attacker extracts tokens by bypassing transfer restrictions? Local proof idea: craft token address such that computeV3Address returns PCS_INFINITY_VAULT; launch token; attempt transfer during BondingCurve phase.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_a35a46de-0c0e-4c12-864d-a5b4ba78b8b4?mode=deep",
+    "timestamp": "2026-07-06 18:22:22.129158",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV2Address / computeV3Address / IMultiDexRouter.getDEXInfo] Can an unprivileged attacker call getDEXInfo(dexId) to read the v2InitCodeHash and v3InitCodeHash, then verify off-chain that these hashes do not match the live BSC PancakeSwap factory's actual initCodeHashes, under the precondition that the hashes are stale or wrong, trigger the sequence read DEXInfo → compute wrong pool addresses → launch token → anti-farmer bypass, violating the invariant that DEXInfo.v2InitCodeHash and v3InitCodeHash must match the live factory's actual initCodeHashes, causing scoped impact: attacker systematically bypasses anti-farmer for all tokens using the wrong hash? Local proof idea: fork BSC, call getDEXInfo(0), compare v2InitCodeHash against keccak256(IUniswapV2Factory.pairCodeHash()); assert match or mismatch.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_944b0ffd-8ef2-466b-81c6-7ff4c74183de?mode=deep",
+    "timestamp": "2026-07-06 18:22:35.445126",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV3Address / PackedDexPool.tickSpacing / collectV4Fees V4 path] Can an unprivileged attacker call collectV4Fees(token) under the precondition that _dexPools[token] has wrong tickSpacing (set during migration via computeV3Address with wrong fee → wrong tickSpacing derived), trigger the sequence collectV4Fees → PORTAL_V4_CL_LOCKER → fee collection uses wrong tickSpacing → wrong pool position queried → attacker-controlled position at correct tickSpacing captures fees, violating the invariant that fee collection must use the correct pool parameters matching the actual LP position, causing scoped impact: attacker captures LP fees by pre-positioning at the correct tickSpacing? Local proof idea: fork BSC, set wrong tickSpacing in _dexPools, call collectV4Fees, assert fees go to wrong position; pre-position at correct tickSpacing and collect.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_78548b4b-f4a9-4d4c-a06f-69461b83e2e8?mode=deep",
+    "timestamp": "2026-07-06 18:22:47.911423",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV2Address / IUniswapV2Factory.createPair / salt-based token address prediction] Can an unprivileged attacker predict the token address for a future newTokenV7 launch (via CREATE2 with known salt) and pre-create the PancakeSwap V2 pair via IUniswapV2Factory.createPair(predictedToken, WBNB) under the precondition that computeV2Address correctly predicts the pair address, trigger the sequence attacker createPair → sets initial reserves → newTokenV7 launches → ITokenV3.initialize(pools=[preCreatedPair, ...]) → attacker's pre-seeded pair is the registered pool → attacker controls pool reserves, violating the invariant that the DEX pool must be created by the migration process with correct initial parameters, causing scoped impact: attacker manipulates initial pool price and captures migration value? Local proof idea: fork BSC, predict token address from salt, createPair, launch token, assert attacker controls pool.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_6981d2d9-ed0a-4430-b59a-452c372c747c?mode=deep",
+    "timestamp": "2026-07-06 18:23:01.078010",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV3Address / IMultiDexRouter.exactInputSingle / DEX swap routing] Can an unprivileged attacker call swapExactInput for a token where _dexPools[token].poolType == V3 but the actual pool was created as V2 (due to computeV3Address returning wrong address during migration fallback to V2), trigger the sequence swapExactInput → PORTAL_DEX_ROUTER → routes to V3 pool (wrong type) → V3 pool doesn't exist → fallback behavior sends tokens to wrong address, violating the invariant that the poolType in _dexPools must match the actual pool type, causing scoped impact: attacker exploits the routing mismatch to extract tokens or cause Portal to lose funds? Local proof idea: fork BSC, set poolType=V3 but actual pool is V2, call swapExactInput, assert routing failure or fund loss.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_aae87f02-057b-4241-a4b3-752c616a4d56?mode=deep",
+    "timestamp": "2026-07-06 18:23:14.899395",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV2Address / PoolAddress.computeV3Address / invariant: reserve + circulatingSupply reconciliation] Can an unprivileged attacker exploit a wrong pool address prediction to cause Portal's internal reserve accounting to diverge from the actual pool reserves under the precondition that migration sends BNB to a wrong pool address, trigger the sequence newTokenV7 → bonding curve fills → migration → BNB sent to wrong pool → _packedTokenStates[token].reserve not updated correctly → attacker calls swapExactInput using stale reserve state → buys tokens at pre-migration price, violating the invariant that Portal's reserve state must reconcile with the actual pool after migration, causing scoped impact: attacker buys tokens at below-market price using stale reserve state? Local proof idea: fork BSC, trigger migration to wrong pool, call swapExactInput, compare price to actual pool price, assert profit.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_0c07006d-1d4e-4012-a309-edd96a6e9f89?mode=deep",
+    "timestamp": "2026-07-06 18:23:28.479515",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeAlgebraV3Address / DEXInfo.v3Deployer / IMultiDexRouter.computeV3PoolAddress] Can an unprivileged attacker call computeV3PoolAddress(dexId, tokenA, tokenB, fee) via MultiDexRouter under the precondition that the DEX uses Algebra 1.9 (deployer != factory, no fee in salt) but computeV3PoolAddress internally calls computeV3Address (with fee) instead of computeAlgebraV3Address (without fee), trigger the sequence computeV3PoolAddress returns wrong address → token initialized with wrong pool → real Algebra pool not blocked → attacker farms during anti-farmer, violating the invariant that computeV3PoolAddress must return the same address as the actual Algebra factory's pool, causing scoped impact: attacker farms tokens through the real unblocked Algebra pool? Local proof idea: unit test computeV3PoolAddress for an Algebra DEX; compare to actual pool address from Algebra factory; assert match.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_e6d643f3-5ef5-4855-b2db-7434763c9bb3?mode=deep",
+    "timestamp": "2026-07-06 18:23:42.128703",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV2Address / PoolAddress.computeV3Address / cross-module: ITokenV2.pools() return value] Can an unprivileged attacker call ITokenV2(token).pools() to read the (v2, v3) pool addresses stored at initialization, then verify that these differ from the actual factory pool addresses, under the precondition that computeV2Address or computeV3Address used wrong parameters during initialization, trigger the sequence read pools() → confirm wrong addresses → buy through real unblocked pools during anti-farmer → sell after anti-farmer ends, violating the invariant that ITokenV2.pools() must return the same addresses as IUniswapV2Factory.getPair and IPancakeV3Factory.getPool, causing scoped impact: attacker profits by farming tokens during anti-farmer window? Local proof idea: fork BSC, call ITokenV2(token).pools(), compare to factory.getPair/getPool, assert match or mismatch.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_165f4cf7-c62a-4b6b-a745-eac821761a85?mode=deep",
+    "timestamp": "2026-07-06 18:23:56.330780",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV3Address / PackedDexPool / _dexPools / TokenStatus.DEX transition] Can an unprivileged attacker trigger a token's DEX status transition (TokenStatus.Tradable → TokenStatus.DEX) under the precondition that the migration sets _dexPools[token] to a wrong pool address (computeV3Address with wrong fee), then call swapExactInput for the DEX-listed token, trigger the sequence migration → _setTokenStatus(DEX) → _dexPools[token] = wrongPool → swapExactInput → PORTAL_DEX_ROUTER routes to wrongPool → attacker exploits wrong pool, violating the invariant that after DEX transition, all swap routing must use the correct pool, causing scoped impact: attacker extracts value by routing through a manipulated pool after DEX listing? Local proof idea: fork BSC, trigger migration with wrong pool, call swapExactInput, assert routing to wrong pool and profit.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_c4fd6717-4e3a-4775-b155-562073ae9871?mode=deep",
+    "timestamp": "2026-07-06 18:24:09.771466",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV2Address / IMultiDexRouter.swapExactTokensForTokens / quote token swap] Can an unprivileged attacker call swapExactInput with a quote-token-based token (non-native BNB) under the precondition that computeV2Address was called with wrong factory/initCodeHash for the quote token's DEX, trigger the sequence swapExactInput → PORTAL_DEX_ROUTER → swapExactTokensForTokens via MultiDexRouter → wrong pool used → attacker receives more quote tokens than expected, violating the invariant that quote-token swaps must use the correct pool for the quote token pair, causing scoped impact: attacker extracts excess quote tokens by exploiting wrong pool routing? Local proof idea: fork BSC, launch token with ERC20 quote token, set wrong pool in _dexPools, call swapExactInput, assert excess quote token output.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_5f16fd6c-ca56-419b-aa37-337fdda83799?mode=deep",
+    "timestamp": "2026-07-06 18:24:24.739301",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV3Address / ITokenV3.pools(address) / FlapV4Hook] Can an unprivileged attacker exploit the fact that ITokenV3.pools(address) returns true for addresses in the whitelist under the precondition that computeV3Address returned a wrong address that happens to be an attacker-controlled contract, trigger the sequence newTokenV7 → ITokenV3.initialize(pools=[wrongAddr=attackerContract]) → attackerContract.pools() returns true → FlapV4Hook allows transfers to/from attackerContract → attacker transfers tokens freely during BondingCurve phase, violating the invariant that only legitimate DEX pool addresses should be whitelisted in ITokenV3, causing scoped impact: attacker bypasses BondingCurve transfer restrictions and extracts tokens? Local proof idea: craft token address such that computeV3Address returns attacker contract; launch token; verify ITokenV3.pools(attackerContract) == true; attempt transfer.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_70535e1a-16ae-4015-942f-a54599cb12a9?mode=deep",
+    "timestamp": "2026-07-06 18:24:37.641266",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV2Address / computeV3Address / fuzz: initCodeHash parameter space] Can an unprivileged attacker fuzz all 2^256 possible initCodeHash values passed to computeV2Address and computeV3Address under the precondition that the MultiDexRouter stores a specific initCodeHash that differs from the live factory's actual hash, trigger the sequence fuzz initCodeHash → find value where computeV2Address(factory, fuzzedHash, token, WBNB) == attackerContract → if MultiDexRouter uses this hash, token initialized with attackerContract as pool, violating the invariant that initCodeHash must be immutable and match the live factory, causing scoped impact: attacker controls a whitelisted pool address for any token launched after the hash change? Local proof idea: invariant fuzz test: for all initCodeHash values, assert computeV2Address(factory, hash, token, WBNB) != any attacker-controlled address.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_b0e85664-0ab3-4e32-b664-d4fc938d7e04?mode=deep",
+    "timestamp": "2026-07-06 18:24:51.313621",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV3Address / PackedDexPool.pool / LaunchedToDEX event] Can an unprivileged attacker monitor LaunchedToDEX events and verify that the pool address in the event differs from computeV3Address(factory, hash, token, quoteToken, fee) under the precondition that the migration stored a wrong pool address in _dexPools, trigger the sequence monitor LaunchedToDEX → confirm pool mismatch → call updateTokenPoolInfo(token, {pool: realPool}) → _dexPools updated to real pool → collectV4Fees now collects from real pool → fees redirected to attacker-controlled beneficiary, violating the invariant that updateTokenPoolInfo must not allow overwriting a legitimate pool address with an attacker-chosen address, causing scoped impact: attacker redirects LP fees from the real pool to their address? Local proof idea: fork BSC, monitor LaunchedToDEX, call updateTokenPoolInfo with real pool, then collectV4Fees, assert fees go to attacker beneficiary.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_f8df129f-b165-4a92-b494-4eebc9bc88ea?mode=deep",
+    "timestamp": "2026-07-06 18:25:06.057459",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/PoolAddress.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: PoolAddress.computeV2Address / PoolAddress.computeV3Address / invariant test: all launched tokens] Can an unprivileged attacker exploit a systematic mismatch between PoolAddress-computed addresses and actual factory pool addresses for all tokens launched on the live BSC proxy under the precondition that the initCodeHash values in MultiDexRouter are stale (e.g., from a factory upgrade), trigger the sequence for each TokenCreated event → compute expected pool via PoolAddress → compare to IUniswapV2Factory.getPair / IPancakeV3Factory.getPool → confirm mismatch → buy through real unblocked pools for all affected tokens, violating the invariant that PoolAddress.computeV2Address and computeV3Address must return addresses matching the live factory for all token pairs, causing scoped impact: attacker systematically farms all affected tokens during their anti-farmer windows? Local proof idea: fork BSC at block 108382650, enumerate all TokenCreated events, for each token compare PoolAddress output to factory output, assert zero mismatches.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_18d3e360-1e5a-489a-876a-7be319cc320e?mode=deep",
+    "timestamp": "2026-07-06 18:25:19.689566",
+    "report_generated": false
+  }
+]
