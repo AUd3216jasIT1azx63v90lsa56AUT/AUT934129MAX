@@ -37,3 +37,4 @@ jobs:
       - name: Run Setup Index
         run: python setup/index_deepwiki.py
 
+# Workflow registration refresh for migrated repository.

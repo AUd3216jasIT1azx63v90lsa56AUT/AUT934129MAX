@@ -109,3 +109,5 @@ jobs:
           echo "Failed to push after 3 attempts"
           exit 1
           fi
+
+# Workflow registration refresh for migrated repository.

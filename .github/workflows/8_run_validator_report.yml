@@ -154,3 +154,5 @@ jobs:
         env:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: python workflow_chain.py advance --stage 8 --same-workflow 8_run_validator_report.yml --smoke-limit "${{ inputs.smoke_limit }}"
+
+# Workflow registration refresh for migrated repository.

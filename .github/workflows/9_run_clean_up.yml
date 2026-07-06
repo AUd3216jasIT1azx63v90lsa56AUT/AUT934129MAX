@@ -58,3 +58,5 @@ jobs:
           git commit -m "Auto-update: clean up and reports"
           git push
 
+
+# Workflow registration refresh for migrated repository.
