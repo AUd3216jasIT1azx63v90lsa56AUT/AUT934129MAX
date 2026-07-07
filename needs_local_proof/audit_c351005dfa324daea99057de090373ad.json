@@ -1,0 +1,142 @@
+{
+  "schema_version": "proof-gate-v1",
+  "verdict": "NEEDS_LOCAL_PROOF",
+  "gate_question": "Does this exact current protocol, with current live state, allow an unprivileged attacker to extract funds or rewards beyond entitlement?",
+  "paid_scope_match": "reward_extraction",
+  "active_protocol": {
+    "blueprint_project": "Portal",
+    "source_repo": "Kirstennew/Portal--001",
+    "live_context_protocol": "Portal (BSC proxy 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0)",
+    "context_matches_blueprint": true,
+    "context_source": "setup/live_context.json"
+  },
+  "candidate": {
+    "source_file": "src/Portal.sol",
+    "title_or_claim": "Reentrancy in claim/delegateClaim via unguarded delegatecall to PORTAL_ROLLER",
+    "claimed_root_cause": "No reentrancy guard on claim/delegateClaim; PORTAL_ROLLER may transfer before zeroing claimable balance (CEI violation)",
+    "claimed_impact": "Attacker (beneficiary) double-claims LP fees, draining BNB/quote token beyond entitlement"
+  },
+  "hard_gates": {
+    "current_protocol_only": true,
+    "live_state_supports_preconditions": false,
+    "unprivileged_attacker": true,
+    "attacker_controls_trigger": true,
+    "exact_code_path_exists": false,
+    "concrete_fund_or_reward_gain": false,
+    "gain_is_beyond_entitlement": false,
+    "not_dos_grief_or_liveness_only": true,
+    "not_admin_governance_or_key_compromise": true,
+    "not_external_dependency_only": false,
+    "not_expected_behavior": true,
+    "not_known_duplicate": true
+  },
+  "live_preconditions": [
+    {
+      "name": "Token with non-zero claimable LP fees exists (lpLocks populated post-DEX migration)",
+      "required": true,
+      "observed_value": "not present in live_context.json; listed under missing_until_acte_v3_refresh",
+      "source": "missing",
+      "command_if_missing": "cast call 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0 'getLocks(address)' <token> --rpc-url $BSC_RPC on a token address derived from recent LaunchedToDEX events"
+    },
+    {
+      "name": "Attacker is registered beneficiary of that token (_tokenBeneficiaries[token] == attacker)",
+      "required": true,
+      "observed_value": "not present in live_context.json; mapping keys not enumerable without event-derived keys",
+      "source": "missing",
+      "command_if_missing": "decode BeneficiaryClaimed / setTokenBeneficiary events from BSC logs for the proxy address to find live beneficiary-token pairs"
+    },
+    {
+      "name": "PORTAL_ROLLER implementation source available for static CEI analysis",
+      "required": true,
+      "observed_value": "No PortalRoller.sol present in src/; only out/IPortal.sol/IRoller.json (ABI artifact) found; PORTAL_ROLLER is an immutable address set at construction with no indexed source",
+      "source": "missing",
+      "command_if_missing": "Read PORTAL_ROLLER address from Portal constructor args or storage, then fetch verified source from BscScan: cast storage 0xeb6c62d1885c421797d0c494e693c90d4b54125a <PORTAL_ROLLER_slot> --rpc-url $BSC_RPC; then curl https://api.bscscan.com/api?module=contract&action=getsourcecode&address=<PORTAL_ROLLER_addr>"
+    }
+  ],
+  "source_code_basis": [
+    {
+      "file": "src/Portal.sol",
+      "function": "claim",
+      "symbols_or_lines": "L144-156",
+      "why_it_matters": "Sole modifier is onlyIfBitFlagsSet (bitflag read, no reentrancy protection); immediately delegates to PORTAL_ROLLER with no guard"
+    },
+    {
+      "file": "src/Portal.sol",
+      "function": "delegateClaim",
+      "symbols_or_lines": "L158-171",
+      "why_it_matters": "Identical pattern to claim; same absence of reentrancy guard"
+    },
+    {
+      "file": "src/PortalBase.sol",
+      "function": "_delegateToImpl",
+      "symbols_or_lines": "L831-843",
+      "why_it_matters": "Raw assembly delegatecall; any reentrancy protection must live entirely inside PORTAL_ROLLER; Portal itself adds none"
+    },
+    {
+      "file": "src/PortalBase.sol",
+      "function": "N/A (state variable)",
+      "symbols_or_lines": "L258-259",
+      "why_it_matters": "PORTAL_ROLLER is immutable, set at construction; its source is not present in the indexed repository, making static CEI verification impossible"
+    },
+    {
+      "file": "src/PortalBase.sol",
+      "function": "onlyIfBitFlagsSet",
+      "symbols_or_lines": "L682-686",
+      "why_it_matters": "Only modifier on claim/delegateClaim; confirmed to be a simple bitflag read with no reentrancy semantics"
+    }
+  ],
+  "attacker_path": {
+    "actor": "Unprivileged attacker who is the registered beneficiary of a launched token with non-zero claimable LP fees",
+    "attacker_inputs": [
+      "token address (the token for which attacker is beneficiary)",
+      "attacker-deployed contract with receive() that re-enters Portal.claim(token)"
+    ],
+    "call_sequence": [
+      "1. Attacker contract calls Portal.claim(token)",
+      "2. Portal.claim passes onlyIfBitFlagsSet, calls _delegateToImpl(PORTAL_ROLLER)",
+      "3. PORTAL_ROLLER (running in Portal storage context) reads claimable LP fee amount",
+      "4. IF PORTAL_ROLLER transfers BNB/quote token before zeroing claimable balance: attacker receive() fires",
+      "5. Attacker receive() re-enters Portal.claim(token)",
+      "6. PORTAL_ROLLER reads same non-zeroed claimable amount, transfers again",
+      "7. Attacker drains more than single-claim entitlement"
+    ],
+    "state_before": [
+      "lpLocks[token] has non-zero claimable LP fee amount",
+      "_tokenBeneficiaries[token] == attackerContract"
+    ],
+    "state_after": [
+      "IF vulnerable: attackerContract.totalReceived > singleClaimAmount; lpLocks[token] claimable zeroed only after final re-entry unwinds",
+      "IF safe (CEI or internal guard in PORTAL_ROLLER): attackerContract.totalReceived == singleClaimAmount"
+    ]
+  },
+  "extraction_analysis": {
+    "asset_or_reward": "LP fees (BNB or quote token) held by Portal proxy (1361 BNB live balance)",
+    "attacker_gain": "Multiple times the single-claim LP fee entitlement per reentrancy depth",
+    "victim_or_protocol_loss": "Portal proxy loses BNB/quote token beyond the attacker's legitimate claimable amount",
+    "why_gain_exceeds_entitlement": "If PORTAL_ROLLER reads claimable balance before zeroing it and transfers to caller, each reentrant call reads the same pre-zeroed value and transfers again; attacker receives N * claimable instead of 1 * claimable"
+  },
+  "local_proof_required": {
+    "test_type": "fork",
+    "test_file_to_add": "test/ClaimReentrancy.t.sol",
+    "setup": [
+      "Fork BSC at block >= 108382650 using proxy 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
+      "Decode BeneficiaryClaimed and LaunchedToDEX events to find a token address with non-zero claimable LP fees",
+      "Confirm non-zero claimable via getLocks(token) or collectV4Fees preview call",
+      "Deploy AttackerContract: stores token address, implements receive() that re-enters Portal.claim(token) once and accumulates totalReceived",
+      "Use vm.store to set _tokenBeneficiaries[token] = address(attackerContract) in Portal proxy storage",
+      "Resolve PORTAL_ROLLER address from Portal constructor args or immutable storage slot and fetch its verified source from BscScan for static CEI pre-check before running the fork test"
+    ],
+    "transaction_sequence": [
+      "vm.prank(attackerContract); portal.claim(token);"
+    ],
+    "expected_assertions": [
+      "assertEq(attackerContract.totalReceived(), singleClaimAmount, 'safe: CEI or internal guard holds');",
+      "// FAIL (totalReceived > singleClaimAmount) => double-claim confirmed, promote to HIGH_CONFIDENCE_CANDIDATE",
+      "// PASS => REJECT, PORTAL_ROLLER is safe"
+    ],
+    "reject_if_assertion_fails": "If totalReceived == singleClaimAmount the implementation is safe (CEI or internal guard in PORTAL_ROLLER); reject the finding. If no token with non-zero claimable LP fees can be found on the live fork, reject for unmet preconditions."
+  },
+  "rejection_reason": "Cannot set exact_code_path_exists=true or concrete_fund_or_reward_gain=true because the PORTAL_ROLLER source file is absent from the indexed repository. The entire vulnerability is conditional on PORTAL_ROLLER violating CEI (transferring before zeroing claimable balance). Portal itself has no reentrancy guard (confirmed by grep across all src/**/*.sol), but whether that gap is exploitable depends entirely on PORTAL_ROLLER's internal ordering, which cannot be statically verified without its source. Additionally, live preconditions (token with non-zero claimable LP fees, attacker as registered beneficiary) are unconfirmed from live_context.json. Local fork test with PORTAL_ROLLER source retrieval is required before any promotion.",
+  "deepwiki_source_url": "https://deepwiki.com/search/-deepwiki-exact-proof-gate-can_dcc741f1-2fd3-430c-830e-de8332bfeed9?mode=deep",
+  "deepwiki_verdict": "needs_local_proof"
+}

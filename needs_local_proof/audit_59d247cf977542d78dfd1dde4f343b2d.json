@@ -1,0 +1,139 @@
+{
+  "schema_version": "proof-gate-v1",
+  "verdict": "NEEDS_LOCAL_PROOF",
+  "gate_question": "Does this exact current protocol, with current live state, allow an unprivileged attacker to extract funds or rewards beyond entitlement?",
+  "paid_scope_match": "reward_extraction",
+  "active_protocol": {
+    "blueprint_project": "Portal",
+    "source_repo": "Kirstennew/Portal--001",
+    "live_context_protocol": "Portal (BSC proxy 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0)",
+    "context_matches_blueprint": true,
+    "context_source": "setup/live_context.json"
+  },
+  "candidate": {
+    "source_file": "src/Portal.sol",
+    "title_or_claim": "delegateClaim missing ROLLER_ROLE guard at Portal dispatcher level allows unprivileged LP fee extraction",
+    "claimed_root_cause": "Portal.delegateClaim applies only onlyIfBitFlagsSet(CB_BIT_MASK_GLOBAL_SWITCH) and no onlyRole(ROLLER_ROLE) or onlyRole(DEFAULT_ADMIN_ROLE); if PORTAL_ROLLER implementation also lacks a caller role check, any EOA can trigger LP fee collection to the beneficiary",
+    "claimed_impact": "Unprivileged EOA triggers LP fee collection; if attacker controls the beneficiary address, they receive LP fees without entitlement"
+  },
+  "hard_gates": {
+    "current_protocol_only": true,
+    "live_state_supports_preconditions": false,
+    "unprivileged_attacker": true,
+    "attacker_controls_trigger": true,
+    "exact_code_path_exists": true,
+    "concrete_fund_or_reward_gain": false,
+    "gain_is_beyond_entitlement": false,
+    "not_dos_grief_or_liveness_only": true,
+    "not_admin_governance_or_key_compromise": true,
+    "not_external_dependency_only": false,
+    "not_expected_behavior": true,
+    "not_known_duplicate": true
+  },
+  "live_preconditions": [
+    {
+      "name": "PORTAL_ROLLER implementation address",
+      "required": true,
+      "observed_value": "not present in live_context.json; PORTAL_ROLLER is an immutable set at construction time in PortalBase",
+      "source": "missing",
+      "command_if_missing": "cast storage 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0 <PORTAL_ROLLER_slot> --rpc-url $BSC_RPC  OR  cast call 0xeb6c62d1885c421797d0c494e693c90d4b54125a 'PORTAL_ROLLER()(address)' --rpc-url $BSC_RPC"
+    },
+    {
+      "name": "PORTAL_ROLLER source code or bytecode caller-role check",
+      "required": true,
+      "observed_value": "PORTAL_ROLLER source not present in repository; only out/IPortal.sol/IRoller.json (ABI artifact) exists; ROLLER_ROLE grep returns zero matches across all src/ files",
+      "source": "missing",
+      "command_if_missing": "cast etherscan-source <PORTAL_ROLLER_address> --chain bsc  OR  cast disassemble $(cast code <PORTAL_ROLLER_address> --rpc-url $BSC_RPC) | grep -A5 'CALLER'"
+    },
+    {
+      "name": "Token with launched DEX pool and accumulated LP fees whose beneficiary attacker controls",
+      "required": true,
+      "observed_value": "not enumerated in live_context.json; V4LPFeesCollected events and _tokenBeneficiaries mapping keys not captured",
+      "source": "missing",
+      "command_if_missing": "cast logs --from-block 0 --to-block 108382650 --address 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0 --topic0 $(cast keccak 'V4LPFeesCollected(address,uint256,uint256)') --rpc-url $BSC_RPC"
+    },
+    {
+      "name": "setTokenBeneficiary access control (whether attacker can set beneficiary to self)",
+      "required": true,
+      "observed_value": "IPortal.sol NatSpec states 'Allows the default admin to change the beneficiary' \u2014 setTokenBeneficiary appears admin-only, so attacker must be original token creator/beneficiary",
+      "source": "src/interfaces/IPortal.sol L1883-1886",
+      "command_if_missing": "grep -n 'setTokenBeneficiary' src/PortalBase.sol src/Portal.sol"
+    }
+  ],
+  "source_code_basis": [
+    {
+      "file": "src/Portal.sol",
+      "function": "delegateClaim",
+      "symbols_or_lines": "L159-171",
+      "why_it_matters": "Only guard is onlyIfBitFlagsSet(CB_BIT_MASK_GLOBAL_SWITCH); no ROLLER_ROLE or DEFAULT_ADMIN_ROLE check at the Portal dispatcher level; confirmed by source read"
+    },
+    {
+      "file": "src/interfaces/IPortal.sol",
+      "function": "IRoller.delegateClaim NatSpec",
+      "symbols_or_lines": "L1888-1894",
+      "why_it_matters": "NatSpec explicitly states 'Only the roller or default admin can call this function', confirming the role restriction is intended design, not optional"
+    },
+    {
+      "file": "src/PortalBase.sol",
+      "function": "role constants",
+      "symbols_or_lines": "L137-150",
+      "why_it_matters": "GUARDIAN_ROLE, TAX_MANAGER_ROLE, TAX_GUARDIAN_ROLE, TOKEN_FLAP_FEE_SETTER_ROLE, MODERATOR_ROLE are defined; ROLLER_ROLE is absent \u2014 grep across all src/ confirms zero matches for ROLLER_ROLE"
+    },
+    {
+      "file": "out/IPortal.sol/IRoller.json",
+      "function": "IRoller ABI",
+      "symbols_or_lines": "ABI artifact only",
+      "why_it_matters": "Only roller-related artifact in repo; no roller implementation source is present, making it impossible to confirm or deny whether the roller enforces a caller check internally"
+    }
+  ],
+  "attacker_path": {
+    "actor": "Unprivileged EOA (no roles)",
+    "attacker_inputs": [
+      "token: address of a launched token whose _tokenBeneficiaries entry the attacker controls (attacker is original creator/beneficiary)"
+    ],
+    "call_sequence": [
+      "1. Attacker calls Portal.delegateClaim(token) from unprivileged EOA",
+      "2. onlyIfBitFlagsSet(CB_BIT_MASK_GLOBAL_SWITCH) passes (global halt is off)",
+      "3. _delegateToImpl(PORTAL_ROLLER) executes roller's delegateClaim logic in Portal storage context",
+      "4. IF roller has no caller role check: roller collects LP fees and sends to _tokenBeneficiaries[token] (attacker-controlled address)"
+    ],
+    "state_before": [
+      "_tokenBeneficiaries[token] == attacker address",
+      "token has launched to DEX with accumulated LP fees",
+      "CB_BIT_MASK_GLOBAL_SWITCH bit is set (protocol not halted)"
+    ],
+    "state_after": [
+      "LP fees transferred to attacker-controlled beneficiary address",
+      "attacker receives token and/or ETH/BNB LP fee proceeds"
+    ]
+  },
+  "extraction_analysis": {
+    "asset_or_reward": "LP fees accumulated in DEX pool for a launched token (token amount + ETH/BNB quote amount)",
+    "attacker_gain": "LP fee proceeds sent to attacker-controlled beneficiary without requiring ROLLER_ROLE",
+    "victim_or_protocol_loss": "LP fees that should only be claimable by an authorized roller or admin are extracted by an unprivileged caller",
+    "why_gain_exceeds_entitlement": "NatSpec mandates ROLLER_ROLE or DEFAULT_ADMIN_ROLE; an unprivileged EOA has no entitlement to trigger this claim path; if roller lacks internal check, the Portal-level guard is the only barrier and it is absent"
+  },
+  "local_proof_required": {
+    "test_type": "fork",
+    "test_file_to_add": "test/DelegateClaimAccessControl.t.sol",
+    "setup": [
+      "Fork BSC at block 108382650 against proxy 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
+      "Resolve PORTAL_ROLLER address from immutable storage or constructor args of implementation 0xeb6c62d1885c421797d0c494e693c90d4b54125a",
+      "Query V4LPFeesCollected events to identify a token with accumulated LP fees",
+      "Confirm _tokenBeneficiaries[token] \u2014 use a token the attacker created so beneficiary is attacker-controlled, or verify setTokenBeneficiary is also callable without admin role",
+      "Record ETH and token balances of beneficiary before call"
+    ],
+    "transaction_sequence": [
+      "vm.prank(address(0xDEAD));",
+      "IPortal(proxy).delegateClaim(token);"
+    ],
+    "expected_assertions": [
+      "If call reverts with access-control error from roller: finding is INVALID \u2014 REJECT",
+      "If call succeeds and beneficiary ETH/token balance increases: finding is VALID \u2014 confirm delta equals LP fees collected"
+    ],
+    "reject_if_assertion_fails": "Call reverts with role-based revert from PORTAL_ROLLER implementation, confirming the roller enforces the caller check internally and the Portal-level omission is harmless"
+  },
+  "rejection_reason": "",
+  "deepwiki_source_url": "https://deepwiki.com/search/-deepwiki-exact-proof-gate-can_2b28de28-631f-4ef8-b0c5-3daada06d0d2?mode=deep",
+  "deepwiki_verdict": "needs_local_proof"
+}

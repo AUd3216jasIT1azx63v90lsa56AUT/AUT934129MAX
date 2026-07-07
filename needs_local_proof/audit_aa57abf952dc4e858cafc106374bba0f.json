@@ -1,0 +1,155 @@
+{
+  "schema_version": "proof-gate-v1",
+  "verdict": "NEEDS_LOCAL_PROOF",
+  "gate_question": "Does this exact current protocol, with current live state, allow an unprivileged attacker to extract funds or rewards beyond entitlement?",
+  "paid_scope_match": "fund_extraction",
+  "active_protocol": {
+    "blueprint_project": "Portal",
+    "source_repo": "Kirstennew/Portal--001",
+    "live_context_protocol": "Portal BSC proxy 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
+    "context_matches_blueprint": true,
+    "context_source": "setup/live_context.json"
+  },
+  "candidate": {
+    "source_file": "src/Portal.sol",
+    "title_or_claim": "Reentrancy via V3 mint callback during bonding-curve-to-DEX migration allows bonding-curve buy after migration is triggered",
+    "claimed_root_cause": "No reentrancy guard on swapExactInput; _getSwapImplementation reads live _packedTokenStates before _setTokenStatus(DEX) is written inside PORTAL_TRADE_V2 delegatecall; V3 pool mint callback re-enters Portal at stale Tradable status",
+    "claimed_impact": "Attacker acquires launched tokens at bonding-curve price after migration reserve has been (partially) committed to the DEX migrator, extracting tokens beyond entitlement"
+  },
+  "hard_gates": {
+    "current_protocol_only": true,
+    "live_state_supports_preconditions": true,
+    "unprivileged_attacker": true,
+    "attacker_controls_trigger": true,
+    "exact_code_path_exists": false,
+    "concrete_fund_or_reward_gain": false,
+    "gain_is_beyond_entitlement": false,
+    "not_dos_grief_or_liveness_only": true,
+    "not_admin_governance_or_key_compromise": true,
+    "not_external_dependency_only": true,
+    "not_expected_behavior": true,
+    "not_known_duplicate": true
+  },
+  "live_preconditions": [
+    {
+      "name": "live_tradable_token_near_dex_thresh",
+      "required": true,
+      "observed_value": "Protocol is active with 1361 BNB on proxy; specific token address with circulatingSupply near dexSupplyThresh not enumerated from live_context",
+      "source": "live_context field",
+      "command_if_missing": "cast call 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0 'getTokenV8Safe(address)' <token_address> --rpc-url $BSC_RPC | grep status,circulatingSupply,dexSupplyThresh"
+    },
+    {
+      "name": "portal_trade_v2_address",
+      "required": true,
+      "observed_value": "PORTAL_TRADE_V2 is an immutable set at construction time; address not in live_context snapshot",
+      "source": "missing",
+      "command_if_missing": "cast storage 0xeb6c62d1885c421797d0c494e693c90d4b54125a <PORTAL_TRADE_V2_slot> --rpc-url $BSC_RPC"
+    },
+    {
+      "name": "portal_trade_v2_source_ordering",
+      "required": true,
+      "observed_value": "PORTAL_TRADE_V2 source not present in repository; ordering of _setTokenStatus(DEX) vs external V3 pool mint() call is unknown",
+      "source": "missing",
+      "command_if_missing": "Decompile or obtain verified source of PORTAL_TRADE_V2 implementation address from BSCScan; search for _setTokenStatus call site relative to external pool.mint() call in migration path"
+    },
+    {
+      "name": "portal_v3_mint_callback_dispatch",
+      "required": true,
+      "observed_value": "Portal.sol imports IUniswapV3MintCallback and IPancakeV3MintCallback (L24-25) but does NOT implement uniswapV3MintCallback or pancakeV3MintCallback in any src/**/*.sol file; no fallback function in Portal.sol; source-artifacts/metadata-standard-input.json contains 9 matches for these callbacks suggesting implementation exists in a non-indexed facet (likely PORTAL_TRADE_V2)",
+      "source": "live_context field",
+      "command_if_missing": "cast 4byte-decode $(cast sig 'uniswapV3MintCallback(uint256,uint256,bytes)') and verify Portal proxy ABI includes this selector; check if Portal has a fallback that routes to PORTAL_TRADE_V2"
+    }
+  ],
+  "source_code_basis": [
+    {
+      "file": "src/Portal.sol",
+      "function": "swapExactInput",
+      "symbols_or_lines": "L174-185",
+      "why_it_matters": "Entry point for the attack; no reentrancy guard; calls _getSwapImplementation then _delegateToImpl with no mutex"
+    },
+    {
+      "file": "src/Portal.sol",
+      "function": "_getSwapImplementation",
+      "symbols_or_lines": "L54-76",
+      "why_it_matters": "Reads live _packedTokenStates storage at call time; if status is still Tradable during re-entrant call, routes to PORTAL_TRADE_V2 (bonding curve) instead of PORTAL_DEX_ROUTER"
+    },
+    {
+      "file": "src/PortalBase.sol",
+      "function": "_setTokenStatus",
+      "symbols_or_lines": "L919-943",
+      "why_it_matters": "Plain storage write with no mutex; provides no mutual-exclusion guarantee; if called after external mint() in PORTAL_TRADE_V2, re-entrant call sees stale Tradable status"
+    },
+    {
+      "file": "src/Portal.sol",
+      "function": "receive",
+      "symbols_or_lines": "L48",
+      "why_it_matters": "Portal accepts plain ETH; combined with absent reentrancy guard, any ETH-sending callback can re-enter"
+    },
+    {
+      "file": "src/Portal.sol",
+      "function": "contract declaration and imports",
+      "symbols_or_lines": "L24-25, L32",
+      "why_it_matters": "Portal imports IUniswapV3MintCallback and IPancakeV3MintCallback but does NOT declare them in its inheritance list and does NOT implement the callback functions in any src/**/*.sol file; the actual callback handler location (PORTAL_TRADE_V2 or elsewhere) is unconfirmed from available source"
+    }
+  ],
+  "attacker_path": {
+    "actor": "Unprivileged EOA or contract controlling a V3/PCS mint callback receiver",
+    "attacker_inputs": [
+      "swapExactInput call sized to push circulatingSupply >= dexSupplyThresh for a Tradable token",
+      "Attacker-controlled contract registered as liquidity recipient or callback target during migration mint()"
+    ],
+    "call_sequence": [
+      "1. Attacker calls Portal.swapExactInput (buy) with amount crossing dexSupplyThresh",
+      "2. Portal delegates to PORTAL_TRADE_V2 via delegatecall",
+      "3. PORTAL_TRADE_V2 triggers migration; calls external V3 pool mint() BEFORE calling _setTokenStatus(DEX) [ordering unconfirmed]",
+      "4. V3 pool issues uniswapV3MintCallback / pancakeV3MintCallback to Portal address",
+      "5. Portal dispatches callback (mechanism unconfirmed \u2014 no fallback or callback handler visible in src/**/*.sol)",
+      "6. Re-entrant swapExactInput executes; _getSwapImplementation reads _packedTokenStates: status still Tradable \u2192 routes to PORTAL_TRADE_V2",
+      "7. Re-entrant bonding-curve buy executes against reserve already partially committed to migrator",
+      "8. Attacker receives tokens at stale bonding-curve price"
+    ],
+    "state_before": [
+      "token.status == TokenStatus.Tradable",
+      "token.circulatingSupply == dexSupplyThresh - epsilon",
+      "Portal holds BNB reserve for the token"
+    ],
+    "state_after": [
+      "token.status == TokenStatus.DEX (after outer call completes)",
+      "Attacker holds tokens acquired at bonding-curve price after migration reserve was committed",
+      "Portal reserve accounting inconsistent"
+    ]
+  },
+  "extraction_analysis": {
+    "asset_or_reward": "Launched ERC-20 tokens and/or BNB reserve",
+    "attacker_gain": "Tokens acquired at bonding-curve price against a reserve already partially or fully committed to the DEX migrator",
+    "victim_or_protocol_loss": "Portal BNB reserve and/or token supply integrity; DEX pool receives less liquidity than expected",
+    "why_gain_exceeds_entitlement": "Bonding-curve buys are not valid after migration is triggered; the invariant is that no bonding-curve trades occur once migration begins; attacker bypasses this by exploiting the window between external mint() and _setTokenStatus(DEX) write"
+  },
+  "local_proof_required": {
+    "test_type": "fork",
+    "test_file_to_add": "test/ReentrancyMigration.t.sol",
+    "setup": [
+      "Fork BSC at block 108382650 using proxy 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
+      "Resolve PORTAL_TRADE_V2 immutable address from implementation storage",
+      "Obtain or decompile PORTAL_TRADE_V2 source to confirm ordering of _setTokenStatus(DEX) vs external pool.mint()",
+      "Confirm Portal dispatches uniswapV3MintCallback / pancakeV3MintCallback (check for fallback or ABI selector match)",
+      "Identify or deploy a Tradable token with circulatingSupply at dexSupplyThresh - 1 token",
+      "Deploy MaliciousMigrator that re-enters swapExactInput on Portal during mint callback"
+    ],
+    "transaction_sequence": [
+      "attacker.swapExactInput({inputToken: BNB, outputToken: targetToken, inputAmount: threshold_crossing_amount})",
+      "Inside delegatecall to PORTAL_TRADE_V2: migration triggered, external pool.mint() called",
+      "V3 pool calls uniswapV3MintCallback on Portal address",
+      "Re-entrant attacker.swapExactInput({inputToken: BNB, outputToken: targetToken, inputAmount: X})"
+    ],
+    "expected_assertions": [
+      "If vulnerable: re-entrant swapExactInput succeeds; attacker.tokenBalance > 0 from re-entrant call; final token.status == DEX",
+      "If protected by ordering: re-entrant swapExactInput routes to PORTAL_DEX_ROUTER (unfunded pool) and reverts",
+      "If callback not dispatched: uniswapV3MintCallback call to Portal reverts, outer migration reverts, attack not viable"
+    ],
+    "reject_if_assertion_fails": "If PORTAL_TRADE_V2 calls _setTokenStatus(DEX) before any external call, OR if Portal does not dispatch uniswapV3MintCallback/pancakeV3MintCallback to any handler, the re-entrant path is blocked and the finding must be REJECT"
+  },
+  "rejection_reason": "Not rejected: structural conditions confirmed in available source (no reentrancy guard, routing reads live storage, _setTokenStatus is a plain write). Two blocking unknowns prevent promotion to HIGH_CONFIDENCE_CANDIDATE: (1) PORTAL_TRADE_V2 source is absent from this repository \u2014 the ordering of _setTokenStatus(DEX) vs external pool.mint() is the decisive gate; (2) Portal.sol imports IUniswapV3MintCallback and IPancakeV3MintCallback but implements neither callback function in any src/**/*.sol file and has no fallback dispatcher \u2014 the mechanism by which Portal would handle a V3 mint callback re-entry is unconfirmed from available source. Both unknowns must be resolved by local fork test before this candidate can be promoted or rejected.",
+  "deepwiki_source_url": "https://deepwiki.com/search/-deepwiki-exact-proof-gate-can_c8be7cd7-3756-42fb-9958-9377bd6eb7be?mode=deep",
+  "deepwiki_verdict": "needs_local_proof"
+}

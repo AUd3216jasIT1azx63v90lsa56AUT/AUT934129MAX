@@ -1,0 +1,139 @@
+{
+  "schema_version": "proof-gate-v1",
+  "verdict": "NEEDS_LOCAL_PROOF",
+  "gate_question": "Does this exact current protocol, with current live state, allow an unprivileged attacker to extract funds or rewards beyond entitlement?",
+  "paid_scope_match": "reward_extraction",
+  "active_protocol": {
+    "blueprint_project": "Portal",
+    "source_repo": "Kirstennew/Portal--001",
+    "live_context_protocol": "Portal BSC proxy 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
+    "context_matches_blueprint": true,
+    "context_source": "setup/live_context.json"
+  },
+  "candidate": {
+    "source_file": "src/Portal.sol",
+    "title_or_claim": "recoverStuckDividend has no access control at the Portal.sol entry point; role enforcement is entirely delegated to unindexed PORTAL_TWEAK implementation",
+    "claimed_root_cause": "Portal.sol:recoverStuckDividend carries no onlyRole, hasRole, or onlyIfBitFlagsSet modifier; the sole security boundary is inside the PORTAL_TWEAK delegatecall target whose source is not present in the indexed repository",
+    "claimed_impact": "Unprivileged EOA calls recoverStuckDividend with attacker-controlled taxToken and recipient, causing emergencyWithdraw on a live Dividend contract and transferring dividend tokens to the attacker"
+  },
+  "hard_gates": {
+    "current_protocol_only": true,
+    "live_state_supports_preconditions": false,
+    "unprivileged_attacker": true,
+    "attacker_controls_trigger": true,
+    "exact_code_path_exists": true,
+    "concrete_fund_or_reward_gain": false,
+    "gain_is_beyond_entitlement": false,
+    "not_dos_grief_or_liveness_only": true,
+    "not_admin_governance_or_key_compromise": true,
+    "not_external_dependency_only": true,
+    "not_expected_behavior": true,
+    "not_known_duplicate": true
+  },
+  "live_preconditions": [
+    {
+      "name": "At least one live Dividend contract with non-zero token balance exists",
+      "required": true,
+      "observed_value": "DividendEmergencyWithdrawn event present in ABI inventory; no concrete balance confirmed from live_context",
+      "source": "live_context field",
+      "command_if_missing": "cast logs --from-block earliest --to-block 108382650 --address 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0 'DividendEmergencyWithdrawn(address,address,uint256,address)' --rpc-url $BSC_RPC | tail -20"
+    },
+    {
+      "name": "PORTAL_TWEAK implementation address on live proxy",
+      "required": true,
+      "observed_value": "PORTAL_TWEAK is an immutable in PortalBase.sol L265; runtime value not present in live_context",
+      "source": "missing",
+      "command_if_missing": "cast call 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0 'inspect(bytes)' $(cast calldata 'recoverStuckDividend((address,uint256,address)[])'  '[]') --rpc-url $BSC_RPC 2>&1 || cast storage 0xeb6c62d1885c421797d0c494e693c90d4b54125a --rpc-url $BSC_RPC"
+    },
+    {
+      "name": "PORTAL_TWEAK enforces AUDITOR_ROLE on recoverStuckDividend",
+      "required": true,
+      "observed_value": "IPortal.sol L2027-2031 NatSpec states 'Only callable by AUDITOR_ROLE'; no concrete enforcement visible in indexed source because PortalTweak.sol is absent from the repository",
+      "source": "missing",
+      "command_if_missing": "vm.prank(address(0xdead)); portal.recoverStuckDividend(params); // fork test \u2014 revert = REJECT, success = HIGH_CONFIDENCE_CANDIDATE"
+    }
+  ],
+  "source_code_basis": [
+    {
+      "file": "src/Portal.sol",
+      "function": "recoverStuckDividend",
+      "symbols_or_lines": "L463-470",
+      "why_it_matters": "Entry point carries no modifier; unconditionally delegates to PORTAL_TWEAK with full Portal storage context"
+    },
+    {
+      "file": "src/PortalBase.sol",
+      "function": "N/A",
+      "symbols_or_lines": "L265",
+      "why_it_matters": "PORTAL_TWEAK is an immutable; its source is not present in the indexed repository, making static role-check verification impossible"
+    },
+    {
+      "file": "src/interfaces/IPortal.sol",
+      "function": "recoverStuckDividend",
+      "symbols_or_lines": "L2026-2031",
+      "why_it_matters": "NatSpec documents 'Only callable by AUDITOR_ROLE'; this is the only place AUDITOR_ROLE enforcement is stated for this function \u2014 it is interface-only, not a concrete check"
+    },
+    {
+      "file": "src/Portal.sol",
+      "function": "setBitFlags",
+      "symbols_or_lines": "L530",
+      "why_it_matters": "Contrast: setBitFlags applies onlyRole(DEFAULT_ADMIN_ROLE) at the Portal.sol layer; recoverStuckDividend applies nothing at the Portal.sol layer"
+    },
+    {
+      "file": "src/interfaces/IPortal.sol",
+      "function": "RecoverStuckDividendParams",
+      "symbols_or_lines": "L2009-2017",
+      "why_it_matters": "Struct exposes attacker-controlled 'to' (recipient) and 'taxToken' fields; if PORTAL_TWEAK lacks the role check, attacker directs withdrawn dividend tokens to any address"
+    }
+  ],
+  "attacker_path": {
+    "actor": "Unprivileged EOA (no role membership required at Portal.sol layer)",
+    "attacker_inputs": [
+      "taxToken: address of a live V3 tax token whose Dividend contract holds a non-zero balance",
+      "amount: 0 (withdraw full balance)",
+      "to: attacker-controlled address"
+    ],
+    "call_sequence": [
+      "attacker calls Portal.recoverStuckDividend([{taxToken: <live_tax_token>, amount: 0, to: <attacker>}])",
+      "Portal._delegateToImpl(PORTAL_TWEAK) executes PORTAL_TWEAK logic in Portal storage context",
+      "IF PORTAL_TWEAK omits or has bypassable AUDITOR_ROLE check: resolves Dividend contract via IFlapTaxTokenV3(taxToken).dividendContract()",
+      "Calls Dividend.emergencyWithdraw(amount, to) transferring dividend tokens to attacker"
+    ],
+    "state_before": [
+      "Dividend contract holds non-zero ERC-20 dividend token balance",
+      "attacker holds no AUDITOR_ROLE"
+    ],
+    "state_after": [
+      "Dividend contract balance reduced",
+      "attacker address receives dividend tokens",
+      "DividendEmergencyWithdrawn event emitted"
+    ]
+  },
+  "extraction_analysis": {
+    "asset_or_reward": "ERC-20 dividend tokens held in Dividend contracts deployed by Portal for V3 tax tokens",
+    "attacker_gain": "Full or partial dividend token balance of targeted Dividend contract(s)",
+    "victim_or_protocol_loss": "Token holders entitled to dividend distributions lose their accrued dividend balance",
+    "why_gain_exceeds_entitlement": "Attacker has no AUDITOR_ROLE and no legitimate claim to dividend funds; entitlement is zero"
+  },
+  "local_proof_required": {
+    "test_type": "fork",
+    "test_file_to_add": "test/RecoverStuckDividendAccessControl.t.sol",
+    "setup": [
+      "Fork BSC at block 108382650 against proxy 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
+      "Query recent DividendEmergencyWithdrawn or TokenDividendTokenUpdated events to identify a live taxToken with a non-zero Dividend contract balance",
+      "Record Dividend contract token balance before call",
+      "Prepare attacker as a fresh EOA with no roles"
+    ],
+    "transaction_sequence": [
+      "vm.prank(attacker)",
+      "portal.recoverStuckDividend([RecoverStuckDividendParams({taxToken: liveTaxToken, amount: 0, to: attacker})])"
+    ],
+    "expected_assertions": [
+      "vm.expectRevert() \u2014 call must revert with an AccessControl error if PORTAL_TWEAK enforces AUDITOR_ROLE",
+      "If call does NOT revert: assert dividendContract.balanceOf(dividendToken) decreased AND attacker balance increased \u2192 HIGH_CONFIDENCE_CANDIDATE"
+    ],
+    "reject_if_assertion_fails": "If call reverts with AccessControl error \u2192 REJECT; PORTAL_TWEAK correctly enforces AUDITOR_ROLE at runtime despite no Portal.sol-layer modifier"
+  },
+  "rejection_reason": "",
+  "deepwiki_source_url": "https://deepwiki.com/search/-deepwiki-exact-proof-gate-can_e92bcf98-8f10-47af-8eed-7c8c66ce17b2?mode=deep",
+  "deepwiki_verdict": "needs_local_proof"
+}

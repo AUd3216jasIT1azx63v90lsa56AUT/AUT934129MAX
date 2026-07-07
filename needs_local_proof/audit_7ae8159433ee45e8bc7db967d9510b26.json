@@ -1,0 +1,141 @@
+{
+  "schema_version": "proof-gate-v1",
+  "verdict": "NEEDS_LOCAL_PROOF",
+  "gate_question": "Does this exact current protocol, with current live state, allow an unprivileged attacker to extract funds or rewards beyond entitlement?",
+  "paid_scope_match": "fund_extraction",
+  "active_protocol": {
+    "blueprint_project": "Portal",
+    "source_repo": "Kirstennew/Portal--001",
+    "live_context_protocol": "Portal (BSC proxy 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0)",
+    "context_matches_blueprint": true,
+    "context_source": "setup/live_context.json"
+  },
+  "candidate": {
+    "source_file": "src/Portal.sol",
+    "title_or_claim": "updateTokenPoolInfo lacks access-control role check in Portal.sol wrapper, delegating to unverified PORTAL_DEX_ROUTER implementation",
+    "claimed_root_cause": "Portal.sol applies only onlyIfBitFlagsSet(CB_BIT_MASK_GLOBAL_SWITCH) on updateTokenPoolInfo; DEX_ROUTER_MANAGER_ROLE enforcement exists only in interface declaration and may be absent in the PORTAL_DEX_ROUTER delegatecall target",
+    "claimed_impact": "Unprivileged attacker overwrites _dexPools[T] with attacker-controlled fake pool, causing subsequent swapExactInput calls to route through attacker pool and steal quote tokens from swappers"
+  },
+  "hard_gates": {
+    "current_protocol_only": true,
+    "live_state_supports_preconditions": false,
+    "unprivileged_attacker": true,
+    "attacker_controls_trigger": true,
+    "exact_code_path_exists": true,
+    "concrete_fund_or_reward_gain": false,
+    "gain_is_beyond_entitlement": false,
+    "not_dos_grief_or_liveness_only": true,
+    "not_admin_governance_or_key_compromise": true,
+    "not_external_dependency_only": false,
+    "not_expected_behavior": true,
+    "not_known_duplicate": true
+  },
+  "live_preconditions": [
+    {
+      "name": "portal_not_halted",
+      "required": true,
+      "observed_value": "1361.66 BNB live balance implies portal is active; bitFlags value not directly observed",
+      "source": "live_context field",
+      "command_if_missing": "cast call 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0 'bitFlags()(uint256)' --rpc-url $BSC_RPC"
+    },
+    {
+      "name": "token_with_status_DEX_exists",
+      "required": true,
+      "observed_value": "Not confirmed from live_context.json; LaunchedToDEX events not decoded in seed",
+      "source": "missing",
+      "command_if_missing": "cast logs --from-block 0 --to-block 108382650 --address 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0 'LaunchedToDEX(address,address,uint256)' --rpc-url $BSC_RPC | head -20"
+    },
+    {
+      "name": "PORTAL_DEX_ROUTER_address",
+      "required": true,
+      "observed_value": "Not directly readable; defined in PortalBase.sol storage but value not in live_context.json",
+      "source": "missing",
+      "command_if_missing": "cast storage 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0 <PORTAL_DEX_ROUTER_slot> --rpc-url $BSC_RPC"
+    },
+    {
+      "name": "PORTAL_DEX_ROUTER_enforces_DEX_ROUTER_MANAGER_ROLE",
+      "required": true,
+      "observed_value": "UNKNOWN \u2014 PortalDexRouter.sol is not present in source_identity.source_files; DEX_ROUTER_MANAGER_ROLE appears only in src/interfaces/IPortal.sol (2 matches) and in zero implementation files (Portal.sol, PortalBase.sol, PortalCommon.sol)",
+      "source": "missing",
+      "command_if_missing": "Decompile or obtain verified source for PORTAL_DEX_ROUTER address; or run Foundry fork test at block 108382650 calling updateTokenPoolInfo from unprivileged EOA and observe revert vs success"
+    }
+  ],
+  "source_code_basis": [
+    {
+      "file": "src/Portal.sol",
+      "function": "updateTokenPoolInfo",
+      "symbols_or_lines": "511-522",
+      "why_it_matters": "Confirmed: only guard is onlyIfBitFlagsSet(CB_BIT_MASK_GLOBAL_SWITCH); no onlyRole or hasRole check present in the Portal.sol wrapper layer"
+    },
+    {
+      "file": "src/interfaces/IPortal.sol",
+      "function": "IPortalDexRouter",
+      "symbols_or_lines": "2 occurrences of DEX_ROUTER_MANAGER_ROLE",
+      "why_it_matters": "Role is declared in the interface only; grep across all implementation source files (Portal.sol, PortalBase.sol, PortalCommon.sol) returns zero matches, meaning enforcement must be inside the unverified PORTAL_DEX_ROUTER delegatecall target if it exists at all"
+    },
+    {
+      "file": "src/Portal.sol",
+      "function": "setBitFlags",
+      "symbols_or_lines": "530",
+      "why_it_matters": "Contrast: setBitFlags uses onlyRole(DEFAULT_ADMIN_ROLE); updateTokenPoolInfo does not, making the absence of a role check anomalous relative to other config-mutating functions"
+    },
+    {
+      "file": "src/PortalBase.sol",
+      "function": "storage / constants",
+      "symbols_or_lines": "PORTAL_DEX_ROUTER assignment lines",
+      "why_it_matters": "PORTAL_DEX_ROUTER is an address stored in PortalBase; its implementation contract source is absent from source_identity.source_files, making the role-check question unresolvable from source alone"
+    }
+  ],
+  "attacker_path": {
+    "actor": "Any unprivileged EOA with no roles",
+    "attacker_inputs": [
+      "token = any address T where getTokenV6(T).status == TokenStatus.DEX",
+      "poolInfo.pool = attacker-controlled FakePool contract",
+      "poolInfo.poolType = PoolType.V2 (or matching type)",
+      "poolInfo.fee = 0, poolInfo.tickSpacing = 0, poolInfo.unused = 0"
+    ],
+    "call_sequence": [
+      "attacker calls Portal(0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0).updateTokenPoolInfo(T, PackedDexPool({pool: fakePool, ...}))",
+      "onlyIfBitFlagsSet(CB_BIT_MASK_GLOBAL_SWITCH) passes if portal is live",
+      "_delegateToImpl(PORTAL_DEX_ROUTER) executes PORTAL_DEX_ROUTER bytecode in Portal storage context",
+      "IF PORTAL_DEX_ROUTER lacks DEX_ROUTER_MANAGER_ROLE check: _dexPools[T] is overwritten with fakePool",
+      "Subsequent swapExactInput(T, ...) routes through fakePool, which can return manipulated amounts or steal tokens"
+    ],
+    "state_before": [
+      "_dexPools[T].pool = legitimate DEX pool address",
+      "token T has status == TokenStatus.DEX"
+    ],
+    "state_after": [
+      "_dexPools[T].pool = attacker-controlled fakePool address (IF vulnerable)",
+      "swapExactInput calls for T route through fakePool"
+    ]
+  },
+  "extraction_analysis": {
+    "asset_or_reward": "Quote tokens (BNB or ERC20) paid by users calling swapExactInput for token T",
+    "attacker_gain": "FakePool contract receives and retains quote tokens that should go to the legitimate DEX pool and swappers",
+    "victim_or_protocol_loss": "Swappers lose quote tokens; Portal's DEX routing integrity is broken for token T",
+    "why_gain_exceeds_entitlement": "Attacker has no entitlement to pool configuration changes or to intercept swap proceeds; the DEX_ROUTER_MANAGER_ROLE is the declared gating mechanism and its absence from Portal.sol means the only backstop is the unverified PORTAL_DEX_ROUTER implementation"
+  },
+  "local_proof_required": {
+    "test_type": "fork",
+    "test_file_to_add": "test/UpdateTokenPoolInfoAccessControl.t.sol",
+    "setup": [
+      "Fork BSC at block 108382650 against proxy 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
+      "Query LaunchedToDEX events to obtain a token T with status == TokenStatus.DEX",
+      "Deploy a minimal FakePool contract that implements the expected pool interface",
+      "Create unprivileged attacker EOA (vm.addr(1)) with no roles granted"
+    ],
+    "transaction_sequence": [
+      "vm.prank(attacker)",
+      "portal.updateTokenPoolInfo(T, PackedDexPool({pool: address(fakePool), fee: 0, poolType: PoolType.V2, tickSpacing: 0, unused: 0}))"
+    ],
+    "expected_assertions": [
+      "If call reverts with access-control error: REJECT \u2014 PORTAL_DEX_ROUTER enforces the role, finding is invalid",
+      "If call succeeds: assert portal.getTokenV6(T).pool == address(fakePool) \u2014 confirms _dexPools[T] was overwritten, finding is HIGH_CONFIDENCE_CANDIDATE"
+    ],
+    "reject_if_assertion_fails": "If updateTokenPoolInfo reverts with any access-control or role-related error from the PORTAL_DEX_ROUTER delegatecall target, the finding must be REJECTED as the role check exists in the implementation layer"
+  },
+  "rejection_reason": "Cannot be promoted beyond NEEDS_LOCAL_PROOF because the critical gate \u2014 whether PORTAL_DEX_ROUTER enforces DEX_ROUTER_MANAGER_ROLE \u2014 is unresolvable from available source. PortalDexRouter.sol is absent from source_identity.source_files. DEX_ROUTER_MANAGER_ROLE has zero matches in all implementation files. The Portal.sol wrapper confirms no role check at that layer, but the delegatecall target is the actual enforcement point and its bytecode has not been verified or decompiled. A Foundry fork test against BSC mainnet is the minimum required proof step. concrete_fund_or_reward_gain and gain_is_beyond_entitlement cannot be set true until the fork test confirms the call succeeds without revert.",
+  "deepwiki_source_url": "https://deepwiki.com/search/-deepwiki-exact-proof-gate-can_7f7a907f-89aa-42d4-bf25-d53dfd76f21f?mode=deep",
+  "deepwiki_verdict": "needs_local_proof"
+}

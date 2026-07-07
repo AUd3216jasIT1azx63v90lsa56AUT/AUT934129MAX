@@ -1,0 +1,145 @@
+{
+  "schema_version": "proof-gate-v1",
+  "verdict": "NEEDS_LOCAL_PROOF",
+  "gate_question": "Does this exact current protocol, with current live state, allow an unprivileged attacker to extract funds or rewards beyond entitlement?",
+  "paid_scope_match": "fund_extraction",
+  "active_protocol": {
+    "blueprint_project": "Portal",
+    "source_repo": "Kirstennew/Portal--001",
+    "live_context_protocol": "Portal (BSC proxy 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0)",
+    "context_matches_blueprint": true,
+    "context_source": "setup/live_context.json"
+  },
+  "candidate": {
+    "source_file": "src/Portal.sol",
+    "title_or_claim": "Reentrancy during bonding-curve-to-DEX migration allows attacker to buy at pre-migration bonding-curve price",
+    "claimed_root_cause": "No nonReentrant modifier on swapExactInput; _getSwapImplementation reads live storage status; if PORTAL_TRADE_V2 calls external migrator before writing _setTokenStatus(DEX), a reentrant swapExactInput reads stale Tradable status and routes to PORTAL_TRADE_V2 again",
+    "claimed_impact": "Attacker receives launched tokens at bonding-curve price after migration threshold is crossed, extracting value from the protocol reserve"
+  },
+  "hard_gates": {
+    "current_protocol_only": true,
+    "live_state_supports_preconditions": false,
+    "unprivileged_attacker": true,
+    "attacker_controls_trigger": true,
+    "exact_code_path_exists": false,
+    "concrete_fund_or_reward_gain": false,
+    "gain_is_beyond_entitlement": false,
+    "not_dos_grief_or_liveness_only": true,
+    "not_admin_governance_or_key_compromise": true,
+    "not_external_dependency_only": false,
+    "not_expected_behavior": true,
+    "not_known_duplicate": true
+  },
+  "live_preconditions": [
+    {
+      "name": "token_in_tradable_status_near_dex_threshold",
+      "required": true,
+      "observed_value": "not_enumerable_without_known_token_address",
+      "source": "missing",
+      "command_if_missing": "cast call 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0 'getTokenV8Safe(address)' <token_address> --rpc-url https://rpc.ankr.com/bsc"
+    },
+    {
+      "name": "portal_trade_v2_address",
+      "required": true,
+      "observed_value": "not_readable_from_indexed_source",
+      "source": "missing",
+      "command_if_missing": "cast storage 0xeb6c62d1885c421797d0c494e693c90d4b54125a <PORTAL_TRADE_V2_slot> --rpc-url https://rpc.ankr.com/bsc"
+    },
+    {
+      "name": "portal_trade_v2_source_ordering_of_setTokenStatus_vs_external_migrator_call",
+      "required": true,
+      "observed_value": "UNVERIFIABLE \u2014 PORTAL_TRADE_V2 source not present in Kirstennew/Portal--001; no PortalTradeV2.sol or equivalent found in src/; glob search returned only IPortalTradeV2.json ABI artifact",
+      "source": "missing",
+      "command_if_missing": "Decompile or obtain verified source for PORTAL_TRADE_V2 implementation address on BSC; check whether _setTokenStatus(DEX) sstore precedes or follows the external migrator call in the buy/migration code path"
+    }
+  ],
+  "source_code_basis": [
+    {
+      "file": "src/Portal.sol",
+      "function": "swapExactInput",
+      "symbols_or_lines": "lines 173-185",
+      "why_it_matters": "Entry point has no nonReentrant modifier; only guard is onlyIfBitFlagsSet(CB_BIT_MASK_GLOBAL_SWITCH); delegates to implementation returned by _getSwapImplementation"
+    },
+    {
+      "file": "src/Portal.sol",
+      "function": "_getSwapImplementation",
+      "symbols_or_lines": "lines 54-76",
+      "why_it_matters": "Reads live storage status via _getTokenState; returns PORTAL_TRADE_V2 if status==Tradable, PORTAL_DEX_ROUTER if status==DEX; this is a routing check not a reentrancy lock; stale Tradable read during reentrant call would route to PORTAL_TRADE_V2"
+    },
+    {
+      "file": "src/PortalBase.sol",
+      "function": "_setTokenStatus",
+      "symbols_or_lines": "lines 918-943",
+      "why_it_matters": "Plain assembly sstore with no lock semantics; if called after external migrator callback, reentrant call reads pre-write Tradable status"
+    },
+    {
+      "file": "src/Portal.sol / src/PortalBase.sol",
+      "function": "all",
+      "symbols_or_lines": "entire files",
+      "why_it_matters": "grep for nonReentrant|ReentrancyGuard|_ENTERED returns zero hits in Portal's own source files; only matches are in lib/openzeppelin-contracts[-upgradeable] which Portal does not inherit for reentrancy protection"
+    },
+    {
+      "file": "PORTAL_TRADE_V2 (external, not in repo)",
+      "function": "buy/migration path",
+      "symbols_or_lines": "unknown",
+      "why_it_matters": "CRITICAL MISSING PIECE: the ordering of _setTokenStatus(DEX) vs external migrator call is entirely inside PORTAL_TRADE_V2 which has no source in this repository; _setTokenStatus(DEX) and LaunchedToDEX/dexSupplyThresh logic are absent from PortalBase.sol grep results, confirming they live in the external implementation"
+    }
+  ],
+  "attacker_path": {
+    "actor": "unprivileged EOA controlling a contract with UniswapV3MintCallback or ERC-20 transfer hook",
+    "attacker_inputs": [
+      "ExactInputParams with inputToken=quote token, outputToken=target token near dexSupplyThresh",
+      "amountIn sized to push circulatingSupply to dexSupplyThresh",
+      "malicious migrator callback or ERC-20 transfer hook that re-enters swapExactInput"
+    ],
+    "call_sequence": [
+      "1. attacker calls swapExactInput",
+      "2. _getSwapImplementation reads status=Tradable, returns PORTAL_TRADE_V2",
+      "3. _delegateToImpl(PORTAL_TRADE_V2) executes buy, circulatingSupply reaches dexSupplyThresh",
+      "4. PORTAL_TRADE_V2 triggers migration: calls external migrator (IF _setTokenStatus(DEX) not yet written)",
+      "5. migrator callback re-enters swapExactInput",
+      "6. _getSwapImplementation reads status=Tradable (stale) -> routes to PORTAL_TRADE_V2 again",
+      "7. reentrant buy executes at bonding-curve price; attacker receives tokens",
+      "8. outer call resumes, _setTokenStatus(DEX) is written, liquidity added to DEX pool"
+    ],
+    "state_before": [
+      "token.status = Tradable",
+      "circulatingSupply just below dexSupplyThresh"
+    ],
+    "state_after": [
+      "token.status = DEX (after outer call completes)",
+      "attacker holds tokens purchased at bonding-curve price post-threshold"
+    ]
+  },
+  "extraction_analysis": {
+    "asset_or_reward": "launched tokens purchased at bonding-curve price after DEX migration threshold is crossed",
+    "attacker_gain": "tokens at below-market bonding-curve price; corresponding BNB/quote-token reserve drained from Portal",
+    "victim_or_protocol_loss": "Portal proxy BNB reserve (1361+ BNB live) and/or quote-token reserve reduced by reentrant buy amount without valid post-migration entitlement",
+    "why_gain_exceeds_entitlement": "after dexSupplyThresh is crossed the bonding-curve is closed; no further bonding-curve buys are entitled; reentrant buy at bonding-curve price is outside entitlement"
+  },
+  "local_proof_required": {
+    "test_type": "fork",
+    "test_file_to_add": "test/ReentrancyMigration.t.sol",
+    "setup": [
+      "Fork BSC at block 108382650",
+      "Identify a live token near dexSupplyThresh using getTokenV8Safe on the proxy",
+      "Deploy MockMigrator that re-enters swapExactInput on its callback",
+      "If PORTAL_TRADE_V2 source is unavailable, deploy a mock PORTAL_TRADE_V2 that: (a) increments circulatingSupply to dexSupplyThresh, (b) calls MockMigrator, (c) writes _setTokenStatus(DEX) only after migrator returns",
+      "Fund attacker with sufficient quote token / BNB"
+    ],
+    "transaction_sequence": [
+      "attacker.swapExactInput(ExactInputParams{inputToken: quoteToken, outputToken: targetToken, amountIn: remainingToThreshold})",
+      "inside PORTAL_TRADE_V2 mock: call MockMigrator.migrate()",
+      "MockMigrator.migrate() re-enters portal.swapExactInput with small amountIn",
+      "record attackerTokenBalance after reentrant call"
+    ],
+    "expected_assertions": [
+      "IF VULNERABLE: reentrant swapExactInput succeeds; attackerTokenBalance > 0 after reentrant call; status == Tradable at time of reentrant buy",
+      "IF PROTECTED: reentrant call reverts with TokenNotTradable or DEX-router failure on unfunded pool"
+    ],
+    "reject_if_assertion_fails": "If reentrant swapExactInput reverts in all tested orderings, REJECT \u2014 the status write precedes the external call in the real PORTAL_TRADE_V2 and the routing check is sufficient"
+  },
+  "rejection_reason": "Cannot promote to HIGH_CONFIDENCE_CANDIDATE because the single load-bearing assumption \u2014 that PORTAL_TRADE_V2 calls the external migrator BEFORE writing _setTokenStatus(DEX) \u2014 is unverifiable from this repository. PORTAL_TRADE_V2 source is absent from Kirstennew/Portal--001 (glob and grep confirm no PortalTradeV2.sol; _setTokenStatus(DEX) and dexSupplyThresh logic are absent from PortalBase.sol, confirming they reside entirely in the external implementation). If the real PORTAL_TRADE_V2 writes _setTokenStatus(DEX) before the external migrator call, the reentrant swapExactInput is routed to PORTAL_DEX_ROUTER and fails on an unfunded pool, collapsing the attack. The absence of a nonReentrant modifier and the plain-storage nature of _setTokenStatus are confirmed, but those facts alone do not establish exploitability without the ordering proof.",
+  "deepwiki_source_url": "https://deepwiki.com/search/-deepwiki-exact-proof-gate-can_88d1bf0a-ecb1-4bd8-9944-7345ab4ed28b?mode=deep",
+  "deepwiki_verdict": "needs_local_proof"
+}
