@@ -1,0 +1,27 @@
+[
+  {
+    "question": "'File Name: src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets an unprivileged user overclaim beneficiary payouts, dividend rewards, LP-fee distributions, tax rewards, migration proceeds, or token-launch related rewards beyond valid entitlement'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_499a3e99-30fc-4455-9633-02578d276300?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/PortalBase.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets an unprivileged user overclaim beneficiary payouts, dividend rewards, LP-fee distributions, tax rewards, migration proceeds, or token-launch related rewards beyond valid entitlement'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_c2bead60-a7ad-4e2f-9786-580e7040b88f?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/PortalCommon.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets an unprivileged user overclaim beneficiary payouts, dividend rewards, LP-fee distributions, tax rewards, migration proceeds, or token-launch related rewards beyond valid entitlement'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_e11ef4de-bb8c-4bf3-b8b1-185c65c6366b?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/libraries/Curve.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets an unprivileged user overclaim beneficiary payouts, dividend rewards, LP-fee distributions, tax rewards, migration proceeds, or token-launch related rewards beyond valid entitlement'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_bc245da4-d62c-4c3f-a6cc-ccd8542606fe?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/libraries/PoolAddress.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets an unprivileged user overclaim beneficiary payouts, dividend rewards, LP-fee distributions, tax rewards, migration proceeds, or token-launch related rewards beyond valid entitlement'",
+    "url": "https://deepwiki.com/search/-generate-fund-extraction-and_a83ce801-004a-4e2b-969d-fa71267c5a9e?mode=deep",
+    "questions_generated": false
+  }
+]
