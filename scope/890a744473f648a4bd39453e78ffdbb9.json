@@ -1,7 +1,0 @@
-[
-  "'File Name: src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets an unprivileged user overclaim beneficiary payouts, dividend rewards, LP-fee distributions, tax rewards, migration proceeds, or token-launch related rewards beyond valid entitlement'",
-  "'File Name: src/PortalBase.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets an unprivileged user overclaim beneficiary payouts, dividend rewards, LP-fee distributions, tax rewards, migration proceeds, or token-launch related rewards beyond valid entitlement'",
-  "'File Name: src/PortalCommon.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets an unprivileged user overclaim beneficiary payouts, dividend rewards, LP-fee distributions, tax rewards, migration proceeds, or token-launch related rewards beyond valid entitlement'",
-  "'File Name: src/libraries/Curve.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets an unprivileged user overclaim beneficiary payouts, dividend rewards, LP-fee distributions, tax rewards, migration proceeds, or token-launch related rewards beyond valid entitlement'",
-  "'File Name: src/libraries/PoolAddress.sol -> Scope: Critical Reward extraction or unfair reward access: any bug that lets an unprivileged user overclaim beneficiary payouts, dividend rewards, LP-fee distributions, tax rewards, migration proceeds, or token-launch related rewards beyond valid entitlement'"
-]
