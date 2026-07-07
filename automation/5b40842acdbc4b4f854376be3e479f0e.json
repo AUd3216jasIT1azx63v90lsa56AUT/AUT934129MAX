@@ -40,5 +40,47 @@
     "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_ff0129f3-06af-4d1b-8889-8215de90e884?mode=deep",
     "timestamp": "2026-07-07 09:38:20.866258",
     "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/Curve.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: LibCurve.estimateSupply] Can an unprivileged ATTACKER under PRECONDITIONS (token using CURVE_RH_BNB_1X5_32BNB, h=3359591794 ether) trigger CALL_SEQUENCE (buy tokens with reserve = 1 wei; observe estimateSupply returns TOTAL_SUPPLY + h - divWadUp(k, r + 1 wei) ≈ TOTAL_SUPPLY + h - k/r ≈ TOTAL_SUPPLY + h - 4359591794 ether ≈ 0 tokens), violating INVARIANT (estimateSupply must be monotonically increasing in reserve), causing scoped impact: if estimateSupply returns 0 or underflows for small reserve values on h>0 curves, the buy path mints 0 tokens while consuming reserve, effectively donating BNB to the protocol — but if it underflows (wraps), attacker receives type(uint256).max tokens, overclaiming all token-launch rewards? Local proof idea: unit test; call estimateSupply with reserve = 1 wei for each h>0 curve; assert result >= 0 and no underflow.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_a22e523b-fc73-4b49-af5e-d7936d0a9633?mode=deep",
+    "timestamp": "2026-07-07 09:45:22.743986",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/Curve.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: LibCurve.estimateReserve / LibCurve.estimateSupply] Can an unprivileged ATTACKER under PRECONDITIONS (any token, any curve) trigger CALL_SEQUENCE (buy tokens to supply S1; sell half to supply S2 = S1/2; buy back to S1; sell all to 0; compare total reserve paid vs received), violating INVARIANT (total reserve paid >= total reserve received + fees across all trades), causing scoped impact: non-monotonic rounding errors in the buy-sell sequence allow attacker to extract more BNB/quote tokens than paid, overclaiming bonding-curve rewards? Local proof idea: invariant fuzz test; track cumulative reserve_in and reserve_out across arbitrary buy-sell sequences; assert reserve_in >= reserve_out + fees.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_5f9bd679-888d-4b08-a090-37b0b32bd4d9?mode=deep",
+    "timestamp": "2026-07-07 09:45:34.762658",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/Curve.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: LibCurve.estimateSupplyV2] Can an unprivileged ATTACKER under PRECONDITIONS (token with 6-decimal quote token, h>0 curve, reserve = 0 initial state) trigger CALL_SEQUENCE (call estimateSupplyV2 with reserve = 0, reserveDecimals = 6), violating INVARIANT (estimateSupplyV2(curve, 0, 6) == 0 for h=0 curves; for h>0 curves, result must equal TOTAL_SUPPLY + h - k/r which may be non-zero), causing scoped impact: if estimateSupplyV2(curve, 0, 6) returns non-zero for h>0 curves, the buy path mints tokens without receiving any reserve, allowing attacker to claim token-launch rewards for free? Local proof idea: unit test; for each h>0 curve with 6-decimal token, assert estimateSupplyV2(curve, 0, 6) == 0.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_1464d39e-9207-4550-b5c0-5c5de16777a7?mode=deep",
+    "timestamp": "2026-07-07 09:45:48.118386",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/Curve.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: LibCurve.estimateReserve] Can an unprivileged ATTACKER under PRECONDITIONS (token using h>0 curve, supply = TOTAL_SUPPLY) trigger CALL_SEQUENCE (call estimateReserve with supply = TOTAL_SUPPLY = 1e9 ether), violating INVARIANT (estimateReserve(curve, TOTAL_SUPPLY) must return a finite, non-overflowing value), causing scoped impact: for h>0 curves, denominator = TOTAL_SUPPLY + h - TOTAL_SUPPLY = h, so reserve = divWadUp(k, h) - r; if k/h >> r, this returns a very large reserve value that overflows uint128 when stored, corrupting reserve accounting and enabling attacker to sell tokens for more reserve than Portal holds? Local proof idea: unit test; for each h>0 curve, compute estimateReserve(curve, TOTAL_SUPPLY); assert result fits in uint128.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_81e42f9f-0f15-433b-96a7-d268b3621f1f?mode=deep",
+    "timestamp": "2026-07-07 09:46:00.769614",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/Curve.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: LibCurve.price / LibCurve.estimateSupply] Can an unprivileged ATTACKER under PRECONDITIONS (token using h>0 curve where TOTAL_SUPPLY + h - supply can be very small near the supply ceiling) trigger CALL_SEQUENCE (buy tokens until supply approaches TOTAL_SUPPLY + h; call price()), violating INVARIANT (price() denominator_squared = mulWad(denominator, denominator) must not overflow), causing scoped impact: if denominator is large (e.g., TOTAL_SUPPLY + h for h=3359591794 ether ≈ 4.36e27), denominator_squared = mulWad(4.36e27, 4.36e27) = 4.36e27 * 4.36e27 / 1e18 = 19e36 which is within uint256 range, but for even larger h values, overflow could corrupt price calculations and fee accounting, enabling reward overclaim? Local proof idea: unit test; for each curve type, assert mulWad(TOTAL_SUPPLY + h, TOTAL_SUPPLY + h) does not overflow.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_8f0fb77b-523a-4221-8cd5-6cf05641f4b5?mode=deep",
+    "timestamp": "2026-07-07 09:46:13.856858",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/Curve.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: LibCurve.estimateSupply / PortalCommon._curveByType] Can an unprivileged ATTACKER under PRECONDITIONS (token using CURVE_RH_14981_108002125: r=14981 ether, h=108002125 ether, k=16598979834625 ether) trigger CALL_SEQUENCE (buy tokens with reserve = 1 ether; compute expected supply = TOTAL_SUPPLY + h - divWadUp(k, r + 1 ether) = 1e9 ether + 108002125 ether - divWadUp(16598979834625 ether, 14982 ether)), violating INVARIANT (supply must be positive and less than TOTAL_SUPPLY + h), causing scoped impact: for this specific curve, k/(r+1) ≈ 1.107e9 ether > TOTAL_SUPPLY + h = 1.108e9 ether, so supply ≈ 0 for small reserves, meaning the curve has near-zero initial supply sensitivity, allowing attacker to buy a large fraction of supply with minimal reserve, overclaiming token-launch rewards? Local proof idea: unit test; compute estimateSupply for CURVE_RH_14981_108002125 at reserve = 1 ether; verify supply is economically reasonable.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_37935dd5-e835-4d21-98d2-f53efc50b0a3?mode=deep",
+    "timestamp": "2026-07-07 09:46:27.780442",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/libraries/Curve.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: LibCurve.estimateReserveV2] Can an unprivileged ATTACKER under PRECONDITIONS (token with 8-decimal quote token, scaleFactor = 10^10, scaledReserve near type(uint256).max - scaleFactor + 1) trigger CALL_SEQUENCE (sell tokens such that scaledReserve = divWadUp(k, TOTAL_SUPPLY + h - supply) - r is near type(uint256).max - 10^10 + 1), violating INVARIANT (scaledReserve + scaleFactor - 1 must not overflow uint256), causing scoped impact: overflow in the ceiling division expression wraps to a small value, making estimateReserveV2 return near-zero reserve for a large token sell, effectively stealing the seller's quote-token entitlement while the tokens are burned? Local proof idea: unit test; find supply value where scaledReserve approaches type(uint256).max; assert no overflow in ceiling division.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_de2fd17b-520a-4ab6-860c-041fa85de66b?mode=deep",
+    "timestamp": "2026-07-07 09:46:42.105221",
+    "report_generated": false
   }
 ]
