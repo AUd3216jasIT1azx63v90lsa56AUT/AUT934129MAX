@@ -148,5 +148,155 @@
     "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_24cf3ba4-d69e-4311-bb20-615eddcd8c22?mode=deep",
     "timestamp": "2026-07-07 10:01:10.167505",
     "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: newTokenV7 with FEE_ZERO profile / setFlapFeeProfile] Can an unprivileged attacker who holds TOKEN_FLAP_FEE_SETTER_ROLE call setFlapFeeProfile(token, FEE_ZERO) on a bonding-curve token to set its fee profile to FEE_ZERO (0% protocol fee), then immediately buy a large amount of tokens paying 0% fee, then sell them back at the standard fee rate (if sell fee is not also zeroed), extracting the fee differential as profit, violating the invariant that fee profile changes must not create arbitrage between buy and sell fee rates? Local proof idea: set FEE_ZERO on a token, buy 10 BNB worth, reset to FEE_GLOBAL_DEFAULT, sell all tokens, assert net BNB gain > 0.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_174f0e4d-fdb0-432d-8853-c1b58cdfae19?mode=deep",
+    "timestamp": "2026-07-07 10:29:25.280394",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: swapExactInput / bonding curve DEX threshold transition] Can an unprivileged attacker buy tokens up to just below the DEX threshold (dexSupplyThresh), then in a single transaction buy the remaining amount that triggers migration to DEX, and if the migration path in PORTAL_TRADE_V2 does not atomically update TokenStatus to DEX before returning, call swapExactInput again in the same block routing to PORTAL_TRADE_V2 (still seeing Tradable status) to buy tokens at bonding-curve price while the DEX pool has already been seeded with liquidity, effectively buying tokens at below-DEX price and selling on DEX for profit? Local proof idea: fork test, buy to threshold-1, buy threshold amount, immediately call swapExactInput again, assert second call routes to PORTAL_DEX_ROUTER not PORTAL_TRADE_V2.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_28a82dc4-bf09-4986-9d55-aea78f0eacfd?mode=deep",
+    "timestamp": "2026-07-07 10:29:37.195211",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: _dexThresholdByType / DexThreshType._1_PERCENT] Can an unprivileged attacker launch a token with DexThreshType._1_PERCENT (dexSupplyThresh = 0.1e8 ether = 1% of 1e9 ether supply), buy just 1% of supply to trigger DEX migration, and if the migration sends nearly all of Portal's BNB reserve (collected from buying 1% of supply) plus the remaining 99% of token supply to the DEX pool, the attacker can immediately sell their 1% of tokens on the DEX at a price inflated by the 99% token supply in the pool, extracting more BNB than deposited, violating the invariant that DEX migration must not create immediate arbitrage for the token creator? Local proof idea: launch with _1_PERCENT threshold, buy 1%, check DEX pool price vs bonding curve price, assert no immediate arbitrage profit.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_54066fdb-cbfa-4948-a2a9-7d5ad3c71879?mode=deep",
+    "timestamp": "2026-07-07 10:29:49.749390",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: stageNewTokenV5 / commitNewTokenV5 (PORTAL_LAUNCHER_TWO_STEP)] Can an unprivileged attacker who is SALE_FORGE (or if SALE_FORGE address is predictable/compromised) call stageNewTokenV5 to stage a token, then call commitNewTokenV5 with a different quoteAmt than the staged parameters, causing the token to be launched with a reserve that does not match the staged configuration, and if the staged token's address was pre-announced to buyers who sent funds expecting specific curve parameters, the attacker can manipulate the launch to extract those funds? Local proof idea: stage a token, commit with quoteAmt=0 (no initial buy), assert _stagedTokenStagers[token] is cleared and reserve=0.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_ef174aa6-b349-4080-bba8-aaf7367a1284?mode=deep",
+    "timestamp": "2026-07-07 10:30:02.639279",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: rollv2 (PORTAL_ROLLER delegatecall)] Can an unprivileged attacker call rollv2 with crafted packedParams that encode a token address and lock IDs pointing to a legitimate token's LP lock, causing PORTAL_ROLLER to attempt to roll (re-lock or claim) LP positions on behalf of the attacker, and if the roller does not verify that msg.sender is the token's beneficiary before executing the roll, the attacker can redirect LP fee claims or lock extensions to their own address, violating the invariant that LP lock operations require beneficiary authorization? Local proof idea: call rollv2 with a live token's lock IDs as a non-beneficiary, assert revert or assert no value transferred to attacker.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_848f1873-7b52-45dd-98b8-b983eea511c6?mode=deep",
+    "timestamp": "2026-07-07 10:30:16.127277",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: newTokenV6/V7 with commissionReceiver set] Can an unprivileged attacker launch a TOKEN_TAXED_V3 token with commissionReceiver=attackerAddress and a high effective tax rate, causing the launcher to compute a high commissionBps via _commissionForTax() and configure TaxProcessor to send a large fraction of all future tax collections to the attacker's address, effectively extracting tax funds from all future buyers and sellers of that token, violating the invariant that commission receivers must be validated against a whitelist or capped at a protocol-defined maximum? Local proof idea: launch TOKEN_TAXED_V3 with commissionReceiver=attacker and max tax rate, buy/sell tokens, assert attacker receives commission proportional to tax collected.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_754603bc-1496-4c13-95c5-5a3795da684b?mode=deep",
+    "timestamp": "2026-07-07 10:30:30.188565",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: newTokenV7 FeeConfig[4] validation] Can an unprivileged attacker launch a newTokenV7 token with feeConfigs where multiple MARKETING_OR_VAULT slots sum to exactly 10000 bps but each individual slot's marketingAddress is set to the attacker's address, causing all tax revenue to flow to the attacker, and if the launcher only validates that bps sum to 10000 without checking that at least one slot goes to a protocol-controlled address, the attacker captures 100% of tax revenue, violating the invariant that protocol must receive its share of tax? Local proof idea: launch with 4 MARKETING_OR_VAULT slots all pointing to attacker, each 2500 bps, buy/sell tokens, assert attacker receives all tax.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_103e09db-260c-4222-8d1d-de12c704eedc?mode=deep",
+    "timestamp": "2026-07-07 10:30:44.402534",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: newTokenV7 with TOKEN_V3_PERMIT and bondingCurveFeeRate=DEFAULT_V4_NON_TAX_FEE_RATE_BPS=125] Can an unprivileged attacker launch a TOKEN_V3_PERMIT token via newTokenV7 and exploit the 1.25% bonding-curve fee that is sent to the token beneficiary (not the protocol fee receiver), by setting themselves as beneficiary at launch and then buying/selling large amounts to accumulate the 1.25% fee on both sides, effectively extracting 2.5% of all trading volume as the beneficiary, and if there is no cap on beneficiary fee accumulation, drain significant BNB from traders? Local proof idea: launch TOKEN_V3_PERMIT with attacker as beneficiary, simulate 100 BNB of buy+sell volume, assert attacker claims ~2.5 BNB via claim().",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_9f1a85ec-c3d3-4eb2-b056-a0305f12941f?mode=deep",
+    "timestamp": "2026-07-07 10:30:58.289917",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: _setTokenStatus / DEX migration race condition] Can an unprivileged attacker observe a pending DEX migration transaction in the mempool, front-run it with a sell transaction that executes while the token is still in Tradable status, then back-run with a buy on the newly created DEX pool at a lower price, profiting from the price discontinuity between the bonding curve's final price and the DEX pool's initial price, violating the invariant that the DEX migration price must be at least as high as the bonding curve's final price? Local proof idea: fork test simulating front-run sell + migration + back-run DEX buy, assert attacker net profit <= 0.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_518b7666-0bee-4d47-9121-c50a7b52043a?mode=deep",
+    "timestamp": "2026-07-07 10:31:13.217956",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: LibCurve.estimateSupply with h > 0 curves (CURVE_RH_*)] Can an unprivileged attacker exploit the virtual token reserve h in CURVE_RH_BNB_1X5_32BNB (h=3359591794 ether) where the denominator in estimateSupply is TOTAL_SUPPLY + h - k/(r + reserve), and if reserve approaches a value where k/(r + reserve) > TOTAL_SUPPLY + h (denominator underflows), causing an arithmetic underflow revert or wrapping in unchecked context, to trigger a denial-of-service that prevents migration or to extract tokens at a price of 0? Local proof idea: fuzz reserve values near the curve's maximum for CURVE_RH_BNB_1X5_32BNB, assert estimateSupply never underflows and always returns supply <= TOTAL_SUPPLY.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_788a578c-ad9a-42e9-b78d-1d31dbb4d1f9?mode=deep",
+    "timestamp": "2026-07-07 10:31:27.753028",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: swapExactInput / quoteExactInput (PORTAL_TRADE_V2)] Can an unprivileged attacker call quoteExactInput (which calls _delegateToImpl and is not marked view in Portal.sol despite being a quote function) with parameters that cause PORTAL_TRADE_V2 to execute state-changing operations (e.g. triggering a migration or updating reserves) as a side effect of the quote, then use the state change to buy tokens at a stale price before the state is reflected in subsequent calls, violating the invariant that quote functions must be read-only? Local proof idea: call quoteExactInput for a token near DEX threshold, check if token status changed to DEX, assert no state changes occurred.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_c071df97-d1d8-4607-9b0d-71b7c5638f12?mode=deep",
+    "timestamp": "2026-07-07 10:31:42.232731",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: newTokenV2/V3/V4 with TOKEN_TAXED and mktBps=10000] Can an unprivileged attacker launch a TOKEN_TAXED (V1) token with taxRate=9900 (99%) and mktBps=10000, causing 99% of every buy/sell to be sent to the tax splitter which forwards 100% to the beneficiary (attacker), effectively making the token a value-extraction vehicle where every buyer loses 99% of their input to the attacker, and if the protocol fee is taken from the pre-tax amount, the attacker extracts near-100% of all trading volume, violating the invariant that tax rates must be capped at a protocol-defined maximum? Local proof idea: check if there is a maximum taxRate validation in the launcher; if not, launch with taxRate=9900, buy 1 BNB, assert attacker receives ~0.99 BNB via claim.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_5d3523e8-292c-465a-8a99-7469ad9f44cc?mode=deep",
+    "timestamp": "2026-07-07 10:31:57.905527",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: _packedTokenStates legacy vs V2 reserve storage] Can an unprivileged attacker exploit the difference in reserve storage between legacy tokens (96-bit reserve at bits[56:151] of slot0) and V2 tokens (128-bit reserve in slot1) — specifically, if a legacy token's reserve exceeds uint96 max (79228162514264337593543950335 wei ≈ 79 billion BNB), the reserve is silently truncated when stored, causing _getTokenState to return a lower reserve than actual, making the bonding curve price appear lower and allowing the attacker to buy tokens at a discount? Local proof idea: create a legacy token, buy enough to push reserve near uint96 max, assert _getTokenState(token).reserve == actual BNB balance of Portal attributable to that token.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_c23174fa-7332-4ac1-a8a0-3cee5e2d5538?mode=deep",
+    "timestamp": "2026-07-07 10:32:12.366808",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: collectV4Fees / addV4LPLiquidity reentrancy] Can an unprivileged attacker deploy a malicious ERC20 as the quote token for a V7 TOKEN_V3_PERMIT token, where the ERC20's transfer() callback re-enters Portal via collectV4Fees or addV4LPLiquidity, causing Portal to process fee collection twice before the first collection's state updates are committed, allowing the attacker to double-claim LP fees, violating the invariant that LP fee collection must be atomic and non-reentrant? Local proof idea: deploy reentrant ERC20 as quote token, launch TOKEN_V3_PERMIT, graduate to DEX, call collectV4Fees, assert V4LPFeesCollected event fires only once per actual fee accrual.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_2e0cc32a-94f5-4a5c-b057-f060a22b9a69?mode=deep",
+    "timestamp": "2026-07-07 10:32:27.509039",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: setTokenBeneficiary access control (PORTAL_ROLLER)] Can an unprivileged attacker call setTokenBeneficiary(token, attackerAddress) for any token if the PORTAL_ROLLER implementation only checks DEFAULT_ADMIN_ROLE but the Portal.sol wrapper has no additional access control modifier, exploiting the fact that Portal.sol's setTokenBeneficiary function has no onlyRole modifier and simply delegates to PORTAL_ROLLER, to redirect all future LP fee claims for any token to the attacker's address? Local proof idea: call setTokenBeneficiary as a random EOA for a live token, assert _tokenBeneficiaries[token] was NOT changed (i.e. PORTAL_ROLLER enforces the role check).",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_36e8eddb-6f73-4404-8341-e3c4bf90be3a?mode=deep",
+    "timestamp": "2026-07-07 10:32:43.405881",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: newTokenV6/V7 with ERC20_TOKEN_WITHOUT_PERMIT quote token] Can an unprivileged attacker launch a token with quoteToken set to an ERC20_TOKEN_WITHOUT_PERMIT quote token and quoteAmt > 0, and if the launcher facet calls transferFrom without first checking that the attacker has approved Portal, causing the launch to revert but leaving Portal in a partially initialized state (e.g. _packedTokenStates[token] written but reserve=0), allowing a subsequent attacker to buy tokens against a zero reserve and receive tokens for free, violating the invariant that token state must be fully initialized or not written at all? Local proof idea: launch with unapproved ERC20_TOKEN_WITHOUT_PERMIT and quoteAmt>0, assert revert and assert _packedTokenStates[token] == 0.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_28ec98f1-5255-4fda-a8a2-50e69b414ae6?mode=deep",
+    "timestamp": "2026-07-07 10:32:57.760436",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: swapExactInput with FEE_FLAPSALE_V0 profile (1% fee)] Can an unprivileged attacker who holds TOKEN_FLAP_FEE_SETTER_ROLE set a token's fee profile to FEE_FLAPSALE_V0 (1% buy fee, 1% sell fee, 0% liquidity fee, 0% reserve fee) on a token that normally has a higher fee profile, then buy a large amount at 1% fee, reset the profile to FEE_GLOBAL_DEFAULT, and sell at the standard fee, extracting the fee differential as profit if the standard sell fee is lower than the buy fee savings, violating the invariant that fee profile changes must not enable profitable round-trips? Local proof idea: set FEE_FLAPSALE_V0, buy 50 BNB, set FEE_GLOBAL_DEFAULT, sell all, assert net BNB gain <= 0.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_e2fd4cb8-a435-4c31-8fda-0251f0900c05?mode=deep",
+    "timestamp": "2026-07-07 10:33:13.063263",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: newTokenV7 with VAULT_PORTAL / ISaltOwnerProvider.getSaltOwner()] Can an unprivileged attacker deploy a malicious contract at an address that equals VAULT_PORTAL (if VAULT_PORTAL is predictable or if the attacker can front-run its deployment), implement ISaltOwnerProvider.getSaltOwner() to return an arbitrary address, and call newTokenV7 from that address to bypass salt-lock ownership checks, launching a token on a salt locked by another user and capturing their locked salt fee, violating the invariant that only the salt locker can launch on their locked salt? Local proof idea: if VAULT_PORTAL is not yet deployed, deploy attacker contract at that address, call newTokenV7 with a locked salt, assert FlapSaltLockedByAnotherUser revert.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_4fb70b80-a49c-406a-a59f-bdb38a6f1ce1?mode=deep",
+    "timestamp": "2026-07-07 10:33:28.509714",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: _eraseToken (PortalBase.sol) / migration path] Can an unprivileged attacker trigger _eraseToken indirectly through the migration path, causing Portal to transfer excess launched tokens to address(0xdead) without updating circulatingSupply, and if the amount erased is calculated incorrectly (e.g. using a stale circulatingSupply), Portal may erase more tokens than the actual excess, reducing the token supply available for DEX liquidity and causing the DEX pool to be seeded with fewer tokens than expected, allowing the attacker to buy the remaining DEX tokens at a lower price? Local proof idea: fork test a migration, assert tokens sent to DEX pool + tokens erased + tokens in circulation == maxSupply.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_18f03b2e-a4c2-441d-9c9c-1b53cf300e28?mode=deep",
+    "timestamp": "2026-07-07 10:33:42.347680",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: newTokenV6/V7 with extensionID set] Can an unprivileged attacker register a malicious extension via registerExtension (if callable by attacker or if a registered extension has a vulnerability), then launch a token with that extensionID, causing the extension's onTokenCreation callback to be called in Portal's delegatecall context, allowing the extension to modify Portal's storage (e.g. _tokenBeneficiaries, _packedTokenStates, bitFlags) and redirect funds or disable circuit breakers, violating the invariant that extensions must not be able to modify Portal's core accounting state? Local proof idea: register a malicious extension that writes to _tokenBeneficiaries slot, launch a token with that extensionID, assert _tokenBeneficiaries was not modified.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_d871516d-f2c1-4dcb-b280-8c8914383877?mode=deep",
+    "timestamp": "2026-07-07 10:33:57.747865",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: swapExactInputV3 with extensionData] Can an unprivileged attacker call swapExactInputV3 with crafted extensionData for a token that uses an extension, causing the extension's onTrade callback to be invoked in Portal's delegatecall context with attacker-controlled data, and if the extension does not validate the extensionData length or content, the attacker can trigger arbitrary storage writes in Portal's context (e.g. overwriting _tokenBeneficiaries or reserve values) to redirect funds, violating the invariant that extension callbacks must be sandboxed from Portal's core state? Local proof idea: call swapExactInputV3 with extensionData encoding a storage write to _tokenBeneficiaries slot, assert no storage modification occurred.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_c3a0aa12-fcbf-4712-b561-173e8a29ebc6?mode=deep",
+    "timestamp": "2026-07-07 10:34:12.028526",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: LibCurve.price() overflow check] Can an unprivileged attacker buy tokens until circulatingSupply approaches TOTAL_SUPPLY + curve.h - 1e9 - 1 (denominator = 1e9 + 1), causing LibCurve.price() to return type(uint256).max (due to the denominator < 1e9 + 1 check), and if the migration threshold check uses this price value to compute the DEX threshold amount, trigger a premature or incorrect migration that sends Portal's entire BNB reserve to the DEX pool at a manipulated price, violating the invariant that migration must only occur when circulatingSupply >= dexSupplyThresh? Local proof idea: buy tokens until supply = dexSupplyThresh - 1, check price(), assert price() != type(uint256).max and migration has not triggered.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_48507009-aadd-40db-ae73-4438bc972b2e?mode=deep",
+    "timestamp": "2026-07-07 10:34:26.694002",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: changeMarketWallet (PORTAL_TWEAK delegatecall)] Can an unprivileged attacker who holds TAX_GUARDIAN_ROLE call changeMarketWallet(token, attackerAddress) for a V2/V3 tax token, redirecting all future marketing wallet distributions (mktBps fraction of tax) to the attacker's address, and then trigger tax collection by buying/selling the token, extracting the marketing wallet share of all future tax revenue, violating the invariant that marketing wallet changes must not redirect already-accrued or future tax to unauthorized addresses? Local proof idea: call changeMarketWallet as TAX_GUARDIAN_ROLE holder, buy/sell token, assert attacker receives mktBps fraction of tax.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_85e43e4e-001b-403c-b7f7-a6691b86819e?mode=deep",
+    "timestamp": "2026-07-07 10:34:41.292423",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: updateTaxTokenAddresses (PORTAL_TWEAK delegatecall)] Can an unprivileged attacker who holds TAX_MANAGER_ROLE call updateTaxTokenAddresses with an update setting beneficiary=attackerAddress and feeReceiver=attackerAddress for a live tax token, causing all future tax splitter distributions to flow to the attacker, and then trigger tax collection by buying/selling the token, extracting the full tax revenue stream, violating the invariant that tax address updates must be restricted to protocol-controlled addresses? Local proof idea: call updateTaxTokenAddresses as TAX_MANAGER_ROLE, buy/sell token, assert attacker receives tax distributions.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_59fde9e3-2647-436b-a0f4-a9b3e9b8e9df?mode=deep",
+    "timestamp": "2026-07-07 10:34:58.076603",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction'] [Function: swapExactInput / bonding curve sell with circulatingSupply underflow] Can an unprivileged attacker sell more tokens than their balance by exploiting a missing balance check in the sell path of PORTAL_TRADE_V2 — if _burnToken calls safeTransferFrom(payer, address(this), amount) and the ERC20 token has a non-standard transferFrom that returns true without actually transferring (e.g. a malicious TOKEN_V2_PERMIT implementation) — causing circulatingSupply to be decremented by amount without tokens being received, allowing the attacker to receive BNB from the reserve without providing tokens, violating the invariant that BNB released on sell == reserve decrease == tokens burned? Local proof idea: deploy a non-standard ERC20 that returns true on transferFrom without transferring, launch as TOKEN_V2_PERMIT (if possible), sell tokens, assert Portal's token balance increased by amount.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_96a2785d-0be8-4e96-88b6-d33cee58d9c2?mode=deep",
+    "timestamp": "2026-07-07 10:35:14.344878",
+    "report_generated": false
   }
 ]
