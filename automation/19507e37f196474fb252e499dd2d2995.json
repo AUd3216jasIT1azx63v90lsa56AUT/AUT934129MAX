@@ -1,0 +1,152 @@
+[
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: claim / PORTAL_ROLLER delegatecall] Can an unprivileged ATTACKER who is the current _tokenBeneficiaries[token] entry call claim(token) repeatedly in the same block under the precondition that the LP lock has accumulated fees and no reentrancy guard prevents re-entry through the roller delegatecall path, triggering claim → roller → locker.collectFees → Portal.receive() → claim again, violating the invariant that total ETH/quote paid out via BeneficiaryClaimed events must not exceed actual LP fees collected, causing scoped impact: attacker drains Portal BNB balance beyond valid LP-fee entitlement? Local proof idea: fork-test on BSC block 108382650 with a token whose lpLocks[token] is non-zero, deploy a receiver contract that re-enters claim() in its receive(), assert Portal.balance before == Portal.balance after + legitimate fee amount.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_6c6c96da-3d6c-4920-b5b2-0f58f6902977?mode=deep",
+    "timestamp": "2026-07-07 09:30:40.679450",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: setTokenBeneficiary / PORTAL_ROLLER delegatecall] Can an unprivileged ATTACKER who is the current beneficiary of token T call setTokenBeneficiary(T, attacker2) without any role check, then have attacker2 call claim(T) to redirect all accumulated LP fees to an attacker-controlled address, violating the invariant that only the original beneficiary or DEFAULT_ADMIN_ROLE can change the beneficiary, causing scoped impact: attacker redirects all claimable LP-fee rewards to an arbitrary address? Local proof idea: unit test calling setTokenBeneficiary from a non-admin non-beneficiary EOA and asserting it reverts; if it succeeds, assert BeneficiaryClaimed emits to the new address.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_79a68c5a-0f86-4651-adda-fde9ad1ba9c8?mode=deep",
+    "timestamp": "2026-07-07 09:30:52.630590",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: delegateClaim / PORTAL_ROLLER delegatecall] Can an unprivileged ATTACKER with no role call delegateClaim(token) under the precondition that the roller implementation does not enforce ROLLER_ROLE or DEFAULT_ADMIN_ROLE on the caller, triggering the full claim flow and sending LP fees to _tokenBeneficiaries[token] (which the attacker controls), violating the invariant that delegateClaim is restricted to authorized rollers or admins, causing scoped impact: attacker triggers premature or repeated fee distribution to a beneficiary address they control? Local proof idea: fork-test calling delegateClaim from an arbitrary EOA; assert it reverts with NotRoller or equivalent; if it succeeds, measure ETH delta.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_98834227-e758-4ebe-b02a-8e339ccfe702?mode=deep",
+    "timestamp": "2026-07-07 09:31:05.278632",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: collectV4Fees / PORTAL_V4_CL_LOCKER delegatecall] Can an unprivileged ATTACKER call collectV4Fees(token) for a TOKEN_V3_PERMIT or TOKEN_TAXED_V3 token that has graduated to DEX, under the precondition that collectV4Fees is permissionless per IV4Locker spec, triggering fee collection from the PCS Infinity CL locker into Portal then forwarding to TaxProcessor, and if TaxProcessor's distribution logic has a rounding or accounting error, causing the attacker-controlled marketingAddress to receive more quote tokens than the LP fees actually collected, violating the invariant that sum of distributed amounts equals collected LP fees, causing scoped impact: attacker overclaims LP-fee distributions? Local proof idea: fork-test with a live V7 token, call collectV4Fees, compare V4LPFeesCollected event amounts against actual token balance deltas.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_5af4967e-c8d3-4f63-ad20-93dca2c71989?mode=deep",
+    "timestamp": "2026-07-07 09:31:18.230255",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: swapExactInput (bonding curve buy path via PORTAL_TRADE_V2)] Can an unprivileged ATTACKER buy tokens with a non-18-decimal ERC20 quote token using estimateSupplyV2, under the precondition that reserveDecimals < 18 and the scaleFactor multiplication in estimateSupplyV2 overestimates the scaled reserve due to truncation, triggering _mintToken to transfer more tokens than the quote reserve justifies, violating the invariant that circulatingSupply increase must equal tokens minted and reserve increase must equal quote tokens received, causing scoped impact: attacker receives excess launched tokens beyond valid bonding-curve entitlement? Local proof idea: fuzz test estimateSupplyV2 with reserveDecimals in [6,8,18] and reserve values near uint128 max; assert estimateSupplyV2(curve, r, d) <= estimateSupply(curve, r * 10^(18-d)).",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_600c6a79-d337-4f9a-8fff-03b199c1e373?mode=deep",
+    "timestamp": "2026-07-07 09:31:32.244171",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: swapExactInput (bonding curve sell path via PORTAL_TRADE_V2)] Can an unprivileged ATTACKER sell tokens for a non-18-decimal ERC20 quote token using estimateReserveV2, under the precondition that the round-up division in estimateReserveV2 combined with the scaleFactor conversion produces a reserve payout that exceeds the actual quote tokens held by Portal, violating the invariant that Portal's quote token balance must be >= sum of all estimateReserveV2 outputs for all sells, causing scoped impact: attacker extracts more quote tokens than deposited into the bonding curve? Local proof idea: invariant fuzz test: for any sequence of buys and sells with a 6-decimal quote token, assert Portal.quoteBalance >= state.reserve after each operation.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_c39fc315-b1f1-4031-9b77-09baee1639d0?mode=deep",
+    "timestamp": "2026-07-07 09:31:46.308428",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: swapExactInput (buy path, legacy curve h=0)] Can an unprivileged ATTACKER buy tokens on a legacy curve (h=0, k=r*1e9) near the dexSupplyThresh boundary, under the precondition that estimateSupply rounds down and the resulting circulatingSupply exactly equals dexSupplyThresh triggering migration, but the reserve credited to the migrator is computed from the pre-migration state, causing the migrator to receive less BNB than Portal holds, leaving residual BNB claimable by a subsequent attacker-triggered path, violating the invariant that Portal.balance == sum(all token reserves) + protocol fees after migration, causing scoped impact: attacker extracts residual BNB left after migration accounting mismatch? Local proof idea: fork-test a token near dexSupplyThresh, buy exactly to threshold, check Portal.balance vs migrated BNB.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_d6f79145-1583-4fcd-8b48-7226926c1edd?mode=deep",
+    "timestamp": "2026-07-07 09:31:59.904790",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: swapExactInput (buy path, FEE_ZERO profile)] Can an unprivileged ATTACKER who is the token creator set FlapFeeProfile.FEE_ZERO for their own token (if setFlapFeeProfile is callable by TOKEN_FLAP_FEE_SETTER_ROLE which the creator holds), then buy tokens with zero protocol fee, under the precondition that the fee-zero path still credits the full msg.value to the reserve without deducting any fee, causing the reserve to be inflated relative to what the bonding curve expects, violating the invariant that reserve == sum(inputAmounts - fees) for all buys, causing scoped impact: attacker inflates reserve to trigger premature DEX migration and capture migration proceeds? Local proof idea: unit test setting FEE_ZERO then buying; assert reserve == msg.value (no fee deducted) and check if dexSupplyThresh is reached earlier than expected.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_7cb7690f-936c-448c-8f8c-0eacbdb06c8f?mode=deep",
+    "timestamp": "2026-07-07 09:32:13.970144",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: newTokenV7 / PORTAL_LAUNCHER delegatecall with FeeConfig[4]] Can an unprivileged ATTACKER launch a TOKEN_TAXED_V3 token via newTokenV7 with feeConfigs where a MARKETING_OR_VAULT slot has marketingAddress set to the attacker's address and totalMktBps is maximized, then immediately buy tokens on the bonding curve triggering TAX_PROC_BONDING_CURVE_FEE_RATE (60%) tax collection, under the precondition that the TaxProcessorV2 distributes mktBps of collected tax to marketingAddress without delay, causing the attacker to receive 60% * mktBps of every buy's tax as immediate BNB/quote reward, violating the invariant that tax rewards flow only to the legitimate beneficiary and not to the token creator acting as their own marketing wallet, causing scoped impact: attacker extracts tax rewards from other buyers' transactions? Local proof idea: fork-test launching a V7 tax token with attacker as marketingAddress, have victim buy, assert attacker.balance increases by expected mktBps fraction.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_b1558e51-6267-45e7-91a6-21760d16914a?mode=deep",
+    "timestamp": "2026-07-07 09:32:27.136242",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: newTokenV7 with MAGIC_DIVIDEND_SELF sentinel] Can an unprivileged ATTACKER launch a TOKEN_TAXED_V3 token via newTokenV7 with dividendToken == MAGIC_DIVIDEND_SELF (0xfEEDFEEDfeEDFEedFEEdFEEDFeEdfEEdFeEdFEEd) and dividendBps > 0, under the precondition that the launcher resolves MAGIC_DIVIDEND_SELF to the newly created tax token address after deployment, and if the dividend contract's setShare/distributeToken logic allows the attacker (as a large holder) to claim a disproportionate share of dividends before other holders accumulate balance, violating the invariant that dividend distribution must be proportional to holder balance at distribution time, causing scoped impact: attacker front-runs dividend distribution to overclaim self-referential dividend rewards? Local proof idea: fork-test launching with MAGIC_DIVIDEND_SELF, attacker buys large amount before others, trigger dividend distribution, assert attacker's dividend claim > proportional share.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_67f86f6d-0412-441f-97bc-27e7face7ec9?mode=deep",
+    "timestamp": "2026-07-07 09:32:40.728283",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: lockSalt / PORTAL_LAUNCHER delegatecall] Can an unprivileged ATTACKER call lockSalt(salt, TOKEN_V3_PERMIT) with msg.value == SALT_LOCK_FEE, then call lockSalt again with the same salt and tokenVersion, under the precondition that the SaltAlreadyLockedBySelf check uses _saltLocks[salt].locker == msg.sender but does not check isUsed, causing the attacker to lock the same salt twice and pay SALT_LOCK_FEE twice with only one lock recorded, violating the invariant that each salt can only be locked once per locker, causing scoped impact: attacker loses SALT_LOCK_FEE (not extraction) — REJECT unless the double-lock allows bypassing the salt-owner check on launch to steal another user's locked salt? Local proof idea: unit test double-locking same salt from same address; assert SaltAlreadyLockedBySelf revert on second call.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_8f1191f2-a4ee-4439-a047-db40ad6ac119?mode=deep",
+    "timestamp": "2026-07-07 09:32:55.087365",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: lockSalt with VAULT_PORTAL trusted caller path] Can an unprivileged ATTACKER who controls a contract that mimics ISaltOwnerProvider.getSaltOwner() call lockSalt through VAULT_PORTAL (if VAULT_PORTAL is a contract that forwards arbitrary calls), under the precondition that VAULT_PORTAL calls getSaltOwner() via staticcall to msg.sender (the attacker's contract), causing the attacker to claim ownership of a salt locked by another user, violating the invariant that only the original locker can use a locked salt for token launch, causing scoped impact: attacker hijacks another user's locked salt and launches a token capturing their SALT_LOCK_FEE investment? Local proof idea: unit test with a mock VAULT_PORTAL that returns attacker address from getSaltOwner(); assert FlapSaltLockedByAnotherUser revert is not bypassed.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_4ce7a593-b777-47a9-96eb-508cc89752d5?mode=deep",
+    "timestamp": "2026-07-07 09:33:11.000992",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: swapExactInput (buy path) with permit data replay] Can an unprivileged ATTACKER replay a victim's ERC20 permit signature (captured from mempool) in a swapExactInput buy call, under the precondition that the permit is for the quote token and the attacker submits the same permitData with their own inputToken/outputToken parameters, causing the victim's quote token allowance to be consumed for the attacker's buy, violating the invariant that permit data must only authorize the intended caller's trade, causing scoped impact: attacker uses victim's quote token balance to buy tokens for themselves? Local proof idea: fork-test with a valid permit signature from victim; submit swapExactInput with attacker as msg.sender and victim's permitData; assert victim's quote balance decreases while attacker receives tokens.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_7d84613f-e6fa-40b5-abd9-92589511cdc2?mode=deep",
+    "timestamp": "2026-07-07 09:33:27.608076",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: swapExactInput (sell path) with circulatingSupply underflow] Can an unprivileged ATTACKER sell tokens for a TOKEN_V2_PERMIT token where _burnToken subtracts from state.circulatingSupply, under the precondition that circulatingSupply is stored as uint128 and a large sell causes circulatingSupply to underflow (wrap around), causing subsequent buys to compute an inflated supply that allows minting tokens at near-zero cost, violating the invariant that circulatingSupply must always equal actual tokens in circulation, causing scoped impact: attacker mints excess tokens at near-zero cost after supply underflow? Local proof idea: fuzz test _burnToken with amount > current circulatingSupply; assert it reverts rather than underflowing uint128.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_1e9b875c-4acc-4bb0-b8aa-38b8d54c0f75?mode=deep",
+    "timestamp": "2026-07-07 09:33:44.375864",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: _getTokenState legacy parsing vs V2 parsing] Can an unprivileged ATTACKER create a token whose packed state slot0 has header byte == 0xff (PACKED_TOKEN_STATE_HEADER) but was written by a legacy path, under the precondition that a legacy token's status field at bits[0:7] happens to equal 0xff (255), causing _getTokenState to parse it as a V2 state and misread the reserve and circulatingSupply from slot1 (which contains unrelated data), violating the invariant that _getTokenState must return the correct reserve and supply for all token versions, causing scoped impact: attacker exploits misread state to buy tokens at a manipulated price or sell for more than the actual reserve? Local proof idea: unit test with a crafted packed uint256 where byte0 == 0xff; assert _getTokenState returns correct fields.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_3595896e-b74d-41b0-b715-79e5459e31cc?mode=deep",
+    "timestamp": "2026-07-07 09:33:59.457738",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: swapExactInput (buy path) with reserve overflow into uint128] Can an unprivileged ATTACKER buy tokens with a very large msg.value such that the new reserve exceeds type(uint128).max, under the precondition that _setTokenReserve stores reserve as uint128 and truncates silently, causing the stored reserve to wrap around to a small value while the actual BNB is held by Portal, violating the invariant that state.reserve == actual quote balance attributable to this token, causing scoped impact: attacker can sell tokens against the wrapped-around reserve and extract more BNB than they deposited? Local proof idea: fuzz test _setTokenReserve with reserve > type(uint128).max; assert it reverts or the stored value equals the input.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_1fa1c946-0908-45ca-b73c-d45c4adc31c8?mode=deep",
+    "timestamp": "2026-07-07 09:34:13.631925",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: collectV4Fees + addV4LPLiquidity reentrancy] Can an unprivileged ATTACKER call collectV4Fees(token) where the TaxProcessor calls back into addV4LPLiquidity(token, ...) during the distribution phase, under the precondition that addV4LPLiquidity is not guarded against reentrant calls from TaxProcessor, causing the locker to increase liquidity with tokens that have already been accounted for in the current fee collection, violating the invariant that LP positions must only be increased by the net new fee amounts collected in a single collectV4Fees call, causing scoped impact: attacker triggers double-counting of LP fees leading to excess token/quote extraction from Portal? Local proof idea: fork-test with a mock TaxProcessor that calls addV4LPLiquidity during distribution; assert token balance deltas are consistent.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_ac9a17be-06ca-430b-9ef1-2e5fb5983cc9?mode=deep",
+    "timestamp": "2026-07-07 09:34:27.731336",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: newTokenV6 / newTokenV7 with commissionReceiver] Can an unprivileged ATTACKER launch a TOKEN_TAXED_V3 token via newTokenV6 with commissionReceiver set to the attacker's address, under the precondition that _commissionForTax() computes a commission bps from the effective tax rate and the TaxProcessorV2 sends this commission to commissionReceiver on every buy/sell, causing the attacker to receive a perpetual commission stream from all trades on their token, violating the invariant that commission extraction is bounded by the documented commission schedule and cannot exceed the tax collected, causing scoped impact: attacker extracts commission rewards from all traders on their token beyond valid entitlement? Local proof idea: fork-test launching a V6 TOKEN_TAXED_V3 with attacker as commissionReceiver; have multiple victims buy/sell; assert attacker receives commission proportional to tax rate.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_5f3ba365-8550-4f87-b40d-b1f5775c55b7?mode=deep",
+    "timestamp": "2026-07-07 09:34:41.614186",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: updateTokenPoolInfo / PORTAL_DEX_ROUTER delegatecall] Can an unprivileged ATTACKER call updateTokenPoolInfo(token, poolInfo) where poolInfo.pool is an attacker-controlled contract, under the precondition that updateTokenPoolInfo lacks role enforcement (or the role check is in the delegatecall target but not in Portal.sol's onlyIfBitFlagsSet modifier), causing _dexPools[token] to be overwritten with the attacker's fake pool, violating the invariant that DEX pool addresses must only be set by authorized DEX_ROUTER_MANAGER_ROLE holders, causing scoped impact: attacker redirects DEX swap proceeds to their fake pool, extracting quote tokens from subsequent swapExactInput calls on DEX-listed tokens? Local proof idea: unit test calling updateTokenPoolInfo from an unprivileged EOA; assert it reverts with access control error.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_f0f8125e-8fa3-4813-9d87-ad68eeaa9713?mode=deep",
+    "timestamp": "2026-07-07 09:34:55.557428",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: swapExactInput (DEX path via PORTAL_DEX_ROUTER) with stale _dexPools] Can an unprivileged ATTACKER exploit a token whose _dexPools[token] was set to a V2 pool but the actual liquidity migrated to a V3 pool, under the precondition that updateTokenPoolInfo was never called after migration, causing swapExactInput to route through the wrong pool and receive fewer output tokens than expected, then the attacker front-runs with the correct pool to extract the price difference, violating the invariant that _dexPools[token] must reflect the actual liquidity pool post-migration, causing scoped impact: attacker extracts value from users trading through stale pool routing? Local proof idea: fork-test with a token whose _dexPools is stale; compare swapExactInput output vs direct pool swap output.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_487c53bd-f258-4497-8ce0-cabba4f270a1?mode=deep",
+    "timestamp": "2026-07-07 09:35:09.057260",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: claim (PORTAL_ROLLER) with lpLocks[token] containing two lock IDs] Can an unprivileged ATTACKER who is the beneficiary call claim(token) for a token with two LP lock positions (lpLocks[token].locks[0] and locks[1] both non-zero), under the precondition that the roller collects fees from both locks but only emits one BeneficiaryClaimed event, causing off-chain accounting to undercount the total claimed amount, violating the invariant that sum of BeneficiaryClaimed.ethAmount events must equal total ETH transferred to beneficiary, causing scoped impact: attacker claims more ETH than recorded in events, enabling repeated claims if the roller does not clear lock state? Local proof idea: fork-test with a token having two non-zero lock IDs; call claim; assert BeneficiaryClaimed.ethAmount == actual ETH received by beneficiary.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_2529464d-5a2a-471a-99d4-1c7dfa859a2c?mode=deep",
+    "timestamp": "2026-07-07 09:35:22.745212",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: swapExactInput (buy path) with nativeToQuoteSwap enabled] Can an unprivileged ATTACKER buy a token whose quote is an ERC20 (e.g. USDT) with native BNB via the nativeToQuoteSwap path, under the precondition that the internal BNB→USDT swap via MULTI_DEX_ROUTER returns fewer USDT than expected due to slippage, but Portal credits the full msg.value equivalent to the reserve, causing the reserve to be overstated relative to actual USDT held, violating the invariant that state.reserve must equal actual quote token balance attributable to this token, causing scoped impact: attacker can sell tokens against the inflated reserve and extract more USDT than deposited? Local proof idea: fork-test with a USDT-quote token; buy with BNB; assert state.reserve == Portal's USDT balance for that token after the swap.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_b2bcc0c0-5eaf-4d53-bb62-f43ea390d436?mode=deep",
+    "timestamp": "2026-07-07 09:35:36.272064",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: newTokenV5 / commitNewTokenV5 (two-step launch via SALE_FORGE)] Can an unprivileged ATTACKER who controls SALE_FORGE (or exploits a bug in SALE_FORGE's access control) call stageNewTokenV5 to stage a token with a specific salt, then call commitNewTokenV5 with a different beneficiary address than the original stager intended, under the precondition that _stagedTokenStagers[token] only records the stager but commitNewTokenV5 allows any beneficiary to be set, violating the invariant that the beneficiary of a staged token must be set by the original stager, causing scoped impact: attacker redirects all LP-fee rewards from a staged token to their own address? Local proof idea: unit test staging a token then committing with a different beneficiary; assert the beneficiary in _tokenBeneficiaries matches the stager's intended address.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_1ad435c5-ed3a-4d63-8052-e04e30404d84?mode=deep",
+    "timestamp": "2026-07-07 09:35:51.636403",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: recoverStuckDividend / PORTAL_TWEAK delegatecall] Can an unprivileged ATTACKER call recoverStuckDividend with a crafted RecoverStuckDividendParams array targeting a dividend contract that holds legitimate user dividend balances, under the precondition that recoverStuckDividend lacks role enforcement in the delegatecall target or the role check is bypassable, causing the dividend contract to transfer tokens to an attacker-controlled address, violating the invariant that dividend recovery must only be callable by AUDITOR_ROLE and must only recover genuinely stuck funds, causing scoped impact: attacker drains dividend contract balances belonging to legitimate holders? Local proof idea: unit test calling recoverStuckDividend from an unprivileged EOA; assert it reverts with access control error.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_b18fce32-16f9-40de-957a-f31f452164fb?mode=deep",
+    "timestamp": "2026-07-07 09:36:06.011255",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Reward extraction or unfair reward access'] [Function: recoverStuckTaxToken / PORTAL_TWEAK delegatecall] Can an unprivileged ATTACKER call recoverStuckTaxToken(taxToken) for a V1 TOKEN_TAXED token, under the precondition that the AUDITOR_ROLE check is in the PORTAL_TWEAK delegatecall target but the Portal.sol dispatcher does not enforce it before delegating, causing the tax splitter to transfer tokens to an attacker-controlled address via the recovery path, violating the invariant that recoverStuckTaxToken is restricted to AUDITOR_ROLE, causing scoped impact: attacker extracts tax tokens accumulated in the tax splitter? Local proof idea: unit test calling recoverStuckTaxToken from an unprivileged EOA; assert it reverts; if it succeeds, measure token balance delta of tax splitter.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_168c038c-03cc-4b60-8173-515d826c093c?mode=deep",
+    "timestamp": "2026-07-07 09:36:21.592281",
+    "report_generated": false
+  }
+]
