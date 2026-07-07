@@ -1,0 +1,152 @@
+[
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: recoverStuckDividend / recoverStuckTaxToken (PORTAL_TWEAK delegatecall, role check)] Can an unprivileged ATTACKER call recoverStuckDividend or recoverStuckTaxToken without holding AUDITOR_ROLE, and if the role check in PORTAL_TWEAK is missing or uses the wrong role constant, drain accumulated dividend or tax tokens from the tax splitter to an attacker-controlled address, violating the invariant that recovery functions must be restricted to AUDITOR_ROLE, causing scoped impact: theft of tax/dividend funds held by the tax splitter or dividend contract? Local proof idea: unit test calling recoverStuckDividend from an EOA; assert AccessControl revert with correct role hash.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_e13c5055-6d3c-4dc4-aaa0-5769dd981651?mode=deep",
+    "timestamp": "2026-07-07 09:59:17.963209",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: newTokenV7 (feeConfigs[4] bps sum validation, MARKETING_OR_VAULT slots)] Can an unprivileged ATTACKER launch a TOKEN_TAXED_V3 via newTokenV7 with feeConfigs where the sum of non-NONE bps equals 10000 but includes a MARKETING_OR_VAULT slot with marketingAddress set to the attacker's address and a very high bps (e.g. 9900), so that 99% of all tax collected flows to the attacker's address, violating the invariant that the primary beneficiary/marketing address must be set by the token creator and not redirectable post-launch without authorization, causing scoped impact: attacker captures 99% of all tax revenue from the token? Local proof idea: unit test launching with attacker as marketingAddress; assert that changeMarketWallet requires TAX_GUARDIAN_ROLE to redirect.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_6e28924e-a55a-4caf-956f-7b7d106b3ac1?mode=deep",
+    "timestamp": "2026-07-07 09:59:29.756218",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: newTokenV7 (commissionReceiver, _commissionForTax internal calculation)] Can an unprivileged ATTACKER launch a TOKEN_TAXED_V3 via newTokenV7 with commissionReceiver set to the attacker's address and a high effective tax rate, causing the internally computed commissionBps to be maximized, so that a large fraction of every trade's tax flows to the attacker as commission, violating the invariant that commission rates must be bounded and the commissionReceiver must be a trusted address, causing scoped impact: attacker extracts commission from every trade on the token? Local proof idea: unit test with commissionReceiver=attacker and max tax rates; assert commissionBps is bounded by protocol limits and cannot exceed documented maximum.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_6c5055cc-93e6-4f23-9f76-cc3cdbc9d474?mode=deep",
+    "timestamp": "2026-07-07 09:59:42.187837",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: stageNewTokenV5 / commitNewTokenV5 (SALE_FORGE restriction, _stagedTokenStagers)] Can an unprivileged ATTACKER (not SALE_FORGE) call commitNewTokenV5 with a salt that was staged by SALE_FORGE, and if the _stagedTokenStagers[token] check in PORTAL_LAUNCHER_TWO_STEP only verifies msg.sender == SALE_FORGE at the Portal dispatcher level but not inside the delegatecall target, bypass the restriction and commit a staged token with attacker-controlled parameters (beneficiary, taxRate), violating the invariant that only SALE_FORGE can commit staged tokens, causing scoped impact: attacker redirects the token's beneficiary to their address and claims all future LP fees? Local proof idea: unit test calling commitNewTokenV5 from non-SALE_FORGE; assert OnlySaleForge revert at both dispatcher and implementation levels.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_b3fb674a-8d60-44d7-b8b6-de65ff193563?mode=deep",
+    "timestamp": "2026-07-07 09:59:55.101741",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: swapExactInput (DEX status, PORTAL_DEX_ROUTER, _dexPools mapping)] Can an unprivileged ATTACKER call swapExactInput for a DEX-status token whose _dexPools entry has pool=address(0) (never set or cleared), causing PORTAL_DEX_ROUTER to attempt a swap through a zero-address pool and either revert with a misleading error or (if the router handles zero-address gracefully) return 0 output while consuming the user's input tokens, violating the invariant that DEX swaps must always route through a valid pool address, causing scoped impact: user's input tokens (BNB or ERC20) are consumed without receiving output? Local proof idea: unit test with _dexPools[token].pool=address(0); call swapExactInput; assert revert with InvalidPoolAddress or similar.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_edc588a7-3f36-465e-b2f4-17068331cb93?mode=deep",
+    "timestamp": "2026-07-07 10:00:08.623382",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: LibCurve.estimateSupply (divWadUp rounding on buy)] Can an unprivileged ATTACKER exploit the divWadUp rounding in estimateSupply (supply = TOTAL_SUPPLY + h - divWadUp(k, r + reserve)) which rounds the divisor up (giving a smaller quotient, thus fewer tokens minted) to systematically receive fewer tokens than the mathematical formula, and then sell those tokens back via estimateReserve (which also rounds up, giving more ETH back), creating a net positive ETH extraction per round-trip, violating the invariant that buy-then-sell round-trip must not yield more ETH than spent, causing scoped impact: slow BNB drain from the proxy? Local proof idea: invariant fuzz test: for random inputAmount, buy then immediately sell; assert ETH received <= ETH spent.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_6529891f-e263-4a4d-a1d3-ca928a5f6625?mode=deep",
+    "timestamp": "2026-07-07 10:00:21.279464",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: swapExactInput (tax token bonding curve, TaxOnBondingCurvePaid accounting)] Can an unprivileged ATTACKER buy a TOKEN_TAXED or TOKEN_TAXED_V2 token on the bonding curve where tax is deducted from the input before the curve calculation, and if the tax amount is computed as a percentage of msg.value but the reserve update uses the full msg.value, the reserve grows faster than the curve formula expects, allowing the attacker to sell tokens back for more BNB than they paid (net of tax), violating the invariant that reserve must only increase by inputAmount minus tax and protocol fee, causing scoped impact: BNB extraction from the proxy? Local proof idea: unit test: buy tax token with 1 BNB; assert reserve increases by exactly 1 BNB - tax - protocolFee; sell back; assert ETH received <= 1 BNB - 2*protocolFee.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_d4e58127-9715-4eba-85dd-b21c157433cd?mode=deep",
+    "timestamp": "2026-07-07 10:00:34.552382",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: newTokenV2/V3/V4/V5/V6/V7 (salt reuse after isUsed=true, _saltLocks mapping)] Can an unprivileged ATTACKER observe a FlapSaltUsed event for a consumed salt and call lockSalt again for the same salt (if the isUsed check only prevents launch but not re-locking), paying SALT_LOCK_FEE to lock an already-used salt, and then attempt to launch a second token at the same CREATE2 address (which would fail due to existing code), causing the SALT_LOCK_FEE to be permanently lost, violating the invariant that lockSalt must revert if the salt is already used or if the token address already has code, causing scoped impact: salt-lock fee loss (value drain from attacker or griefing of legitimate lockers)? Local proof idea: unit test calling lockSalt on a salt where isUsed=true; assert SaltAlreadyLockedBySelf or equivalent revert.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_73f908db-3cd4-43a8-8619-b6ad4271ba80?mode=deep",
+    "timestamp": "2026-07-07 10:00:48.253844",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: _delegateToImpl (assembly delegatecall, return data forwarding)] Can an unprivileged ATTACKER craft a call to any Portal entrypoint that delegatecalls to an implementation module, and if the implementation's return data contains a crafted ABI-encoded value that the caller interprets as a larger token amount or ETH refund than actually transferred, exploit the return data to claim more value than received, violating the invariant that return values from delegatecall must accurately reflect actual token/ETH movements, causing scoped impact: attacker's off-chain accounting shows inflated received amounts leading to protocol insolvency? Local proof idea: unit test comparing actual ERC20 balance change vs return value of swapExactInput; assert they match.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_8233b2ee-cf8c-4c94-89e6-33edd745a084?mode=deep",
+    "timestamp": "2026-07-07 10:01:01.834203",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: swapExactInput (QuoteTokenType.ERC20_TOKEN_WITHOUT_PERMIT, no permit path)] Can an unprivileged ATTACKER call swapExactInput for a token with QuoteTokenType.ERC20_TOKEN_WITHOUT_PERMIT and supply non-empty permitData, causing the implementation to attempt a permit call on a token that does not support it, and if the permit call silently succeeds (e.g. the token has a fallback), the subsequent safeTransferFrom pulls tokens from an unexpected allowance source, violating the invariant that permitData must only be processed for ERC20_TOKEN_WITH_PERMIT quote tokens, causing scoped impact: theft of ERC20 tokens from a victim who has approved Portal? Local proof idea: unit test with a mock ERC20-without-permit that has a fallback; supply permitData; assert no tokens are pulled from non-msg.sender addresses.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_f71d32a5-15f7-4038-b06d-24f6322a8afa?mode=deep",
+    "timestamp": "2026-07-07 10:01:15.013944",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: newTokenV6/V7 (TOKEN_V3_PERMIT non-tax, DEFAULT_V4_NON_TAX_FEE_RATE_BPS=125, bondingCurveFeeRate)] Can an unprivileged ATTACKER launch a TOKEN_V3_PERMIT token via newTokenV7 and exploit the 1.25% bonding-curve fee (DEFAULT_V4_NON_TAX_FEE_RATE_BPS=125) being sent to the token beneficiary (not the protocol fee receiver), then immediately set themselves as beneficiary and call claim() to extract the accumulated bonding-curve fees, violating the invariant that bonding-curve fees for TOKEN_V3_PERMIT must flow to the legitimate beneficiary and not be redirectable by the token creator post-launch, causing scoped impact: theft of bonding-curve fee revenue? Local proof idea: unit test: launch TOKEN_V3_PERMIT; buy tokens; call setTokenBeneficiary to attacker; call claim(); assert only original beneficiary can claim pre-change fees.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_7676af53-1702-4fce-a249-65e06ad08902?mode=deep",
+    "timestamp": "2026-07-07 10:01:28.583290",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: collectV4Fees (permissionless, TAX_PROC_BONDING_CURVE_FEE_RATE vs TAX_PROC_DEX_FEE_RATE)] Can an unprivileged ATTACKER call collectV4Fees for a TOKEN_TAXED_V3 token that is still in BondingCurve state (before LaunchedToDEX), causing the TaxProcessor to apply TAX_PROC_BONDING_CURVE_FEE_RATE (60%) instead of TAX_PROC_DEX_FEE_RATE (41%), and if the fee rate is applied to a non-zero LP fee balance that accumulated before migration, the protocol over-collects fees from the token's LP position, violating the invariant that fee rates must match the token's current phase, causing scoped impact: excess protocol fee extraction from LP positions? Local proof idea: fork test calling collectV4Fees before and after LaunchedToDEX; assert fee rate applied matches token phase.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_1f6ac948-868d-43ca-ba23-20cdb9ca8d3e?mode=deep",
+    "timestamp": "2026-07-07 10:01:42.962356",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: swapExactInput (DEX routing, _getSwapImplementation isBuy logic)] Can an unprivileged ATTACKER call swapExactInput with inputToken=someERC20 and outputToken=address(0) (native), where someERC20 is a registered quote token (enabled=1 in _quoteTokenConfigurations), causing _getSwapImplementation to set isBuy=true and baseToken=address(0), then look up _getTokenState(address(0)) which returns a zero/invalid state, routing to PORTAL_TRADE_V2 which may process a buy of the native token as if it were a launched token, violating the invariant that swapExactInput must revert for invalid token pairs, causing scoped impact: attacker extracts BNB from the proxy by buying the zero-address 'token'? Local proof idea: unit test calling swapExactInput with outputToken=address(0) and inputToken=enabledQuoteToken; assert revert with TokenNotFound or similar.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_02848ddc-8f34-467e-97f1-f6da4ca2cd23?mode=deep",
+    "timestamp": "2026-07-07 10:01:56.078327",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: newTokenV5/V6/V7 (antiFarmerDuration=0 allowed since v5.14.2)] Can an unprivileged ATTACKER launch a TOKEN_TAXED_V3 token with antiFarmerDuration=0, causing the anti-farmer window to be zero seconds, so that immediately after DEX migration all pool addresses are unblocked and the attacker can sandwich the migration transaction to buy tokens at the bonding-curve price and sell them in the DEX pool at a higher price, violating the invariant that anti-farmer protection must prevent immediate post-migration arbitrage, causing scoped impact: attacker extracts value from the migration liquidity? Local proof idea: fork test launching with antiFarmerDuration=0; sandwich the LaunchedToDEX tx; assert attacker profit is bounded by documented slippage.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_6ebe8451-1eb2-4ea8-b5b6-82e15356df76?mode=deep",
+    "timestamp": "2026-07-07 10:02:09.604957",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: _eraseToken (transfer to dead address, no circulatingSupply update)] Can an unprivileged ATTACKER trigger _eraseToken indirectly (e.g. via a migration path that erases unsold tokens) and observe that _eraseToken does NOT update circulatingSupply, so that the stored circulatingSupply remains higher than the actual circulating supply, causing subsequent sells to compute a lower reserve via estimateReserve(inflatedSupply) and return less BNB than the actual reserve entitles, violating the invariant that circulatingSupply must equal actual tokens in circulation after every erase, causing scoped impact: legitimate sellers receive less BNB than entitled (value locked in proxy)? Local proof idea: unit test calling _eraseToken; assert circulatingSupply decreases by erased amount or that estimateReserve uses actual supply.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_a7dd7bfe-f56b-4d17-bdf3-766867147e8c?mode=deep",
+    "timestamp": "2026-07-07 10:02:24.262404",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: swapExactInput (FlapFeeProfile.FEE_FLAPSALE_V0, 1% fee, liquidity/reserve fee=0)] Can an unprivileged ATTACKER who knows a token has FEE_FLAPSALE_V0 profile (1% buy/sell fee, 0% liquidity fee, 0% reserve fee) exploit the absence of a reserve fee to buy tokens at a lower effective cost than FEE_GLOBAL_DEFAULT tokens, and if the fee profile can be set by TOKEN_FLAP_FEE_SETTER_ROLE without admin approval, the attacker self-assigns this role and sets their own token to FEE_ZERO, violating the invariant that fee profiles must not be self-assignable by token creators, causing scoped impact: attacker trades fee-free extracting value from the protocol? Local proof idea: unit test checking role hierarchy: assert TOKEN_FLAP_FEE_SETTER_ROLE cannot be granted by a non-admin.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_267c99f0-eb5b-4c35-9c81-e1575eaaeb86?mode=deep",
+    "timestamp": "2026-07-07 10:02:37.511360",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: newTokenV2/V3 (legacy TOKEN_LEGACY_MINT_NO_PERMIT, IToken.mint/burn)] Can an unprivileged ATTACKER who owns a legacy token (TOKEN_LEGACY_MINT_NO_PERMIT) call IToken(token).mint() directly on the token contract (if the token's owner is not exclusively Portal), minting tokens outside of Portal's accounting, then sell those tokens via swapExactInput causing Portal to pay out BNB for tokens it never accounted for, violating the invariant that circulatingSupply tracked by Portal must equal IToken.totalSupply() for legacy tokens, causing scoped impact: BNB extraction from the proxy? Local proof idea: unit test: mint tokens directly on legacy token; call sell via Portal; assert Portal's reserve decreases correctly and circulatingSupply matches totalSupply.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_17f0f605-f868-4d0e-9e9d-bf17a78c4972?mode=deep",
+    "timestamp": "2026-07-07 10:02:52.032141",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: swapExactInput (reserve uint128 cap, _setTokenReserve)] Can an unprivileged ATTACKER buy tokens on a high-r curve (e.g. CURVE_RH_14981_108002125 with r=14981 ether) until the reserve approaches type(uint128).max (~3.4e38 wei), causing _setTokenReserve to silently truncate the reserve to uint128(reserve), storing a much smaller value, so that subsequent sells compute a lower reserve and return less BNB than the actual reserve, violating the invariant that reserve stored must equal reserve computed by the curve formula, causing scoped impact: BNB locked in proxy (value extraction by protocol insolvency)? Local proof idea: fuzz test with large buy amounts on high-r curves; assert uint128(reserve) == reserve (no truncation).",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_89ce5a55-b298-4430-b768-c10e6f0d84e1?mode=deep",
+    "timestamp": "2026-07-07 10:03:07.499416",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: swapExactInput (QuoteTokenType check, _quoteTokenConfigurations.enabled)] Can an unprivileged ATTACKER call swapExactInput with inputToken set to a quote token whose enabled flag was set to 0 after tokens were already launched with it, causing _getSwapImplementation to set isBuy=false (since enabled==0 means not a quote token) and treat the quote token as the base token, routing to PORTAL_TRADE_V2 which attempts to sell the quote token as if it were a launched meme token, violating the invariant that disabled quote tokens must not be tradeable, causing scoped impact: attacker manipulates routing to extract BNB or tokens from the proxy? Local proof idea: unit test: launch token with quoteToken A; disable A via setQuoteTokenConfiguration; call swapExactInput with inputToken=A; assert revert.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_cab43fc0-ebce-437b-a3d8-f90600adb69b?mode=deep",
+    "timestamp": "2026-07-07 10:03:22.666304",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: newTokenV7 (TOKEN_V3_PERMIT, lpFeeProfile not in NewTokenV7Params)] Can an unprivileged ATTACKER launch a TOKEN_V3_PERMIT via newTokenV7 and observe that NewTokenV7Params has no lpFeeProfile field (unlike V4/V5/V6 params), so the LP fee profile defaults to a fixed value, and if the default profile results in a lower LP fee tier that causes the DEX pool to have worse liquidity, the attacker can sandwich the migration with lower slippage protection, violating the invariant that LP fee profile selection must be consistent with the token's migration parameters, causing scoped impact: attacker extracts value from migration liquidity via sandwich? Local proof idea: fork test comparing migration output with different LP fee profiles; assert migration proceeds are not extractable by sandwiching.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_46ee7659-35ac-4f27-b204-58dad6b3986c?mode=deep",
+    "timestamp": "2026-07-07 10:03:36.679966",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: swapExactInput (dexThreshType._1_PERCENT, 1% supply threshold)] Can an unprivileged ATTACKER launch a token with dexThreshType=_1_PERCENT (1% supply = 0.1e8 ether threshold) and immediately buy 1% of supply in the creation transaction (buyOnCreation), triggering instant DEX migration in the same transaction, and then exploit the migration state transition to buy tokens at bonding-curve price before the DEX pool is initialized, violating the invariant that DEX migration must complete atomically before any post-migration trades, causing scoped impact: attacker buys tokens at bonding-curve price and sells at DEX price in the same block? Local proof idea: fork test launching with _1_PERCENT threshold and large initial buy; assert no trades occur between migration start and completion.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_4d985d1d-c90a-48d9-bcaa-116378addba6?mode=deep",
+    "timestamp": "2026-07-07 10:03:50.283982",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: swapExactInput (PackedTokenStateV2.usingExtension, extensionID slot3 read)] Can an unprivileged ATTACKER launch a token with usingExtension=1 but extensionID pointing to an unregistered or zero extension, causing the extension lookup in PORTAL_TRADE_V2 to return address(0) and the delegatecall to revert with FeatureDisabled, but if the revert is caught and the trade falls through to a default path, the attacker trades without extension validation, violating the invariant that tokens with usingExtension=1 must always validate through their registered extension, causing scoped impact: attacker bypasses extension-enforced trading restrictions to extract tokens or BNB? Local proof idea: unit test with usingExtension=1 and extensionID=bytes32(0); call swapExactInput; assert revert or that extension is always validated.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_d3bb39d9-b982-4b69-921a-b5e7415dbb8e?mode=deep",
+    "timestamp": "2026-07-07 10:04:04.479789",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: rollv2 (PORTAL_ROLLER delegatecall, packedParams)] Can an unprivileged ATTACKER call rollv2 with crafted packedParams that encode a token address and beneficiary address controlled by the attacker, and if PORTAL_ROLLER's rollv2 implementation does not validate that msg.sender is the current beneficiary or an authorized role, redirect LP lock proceeds to the attacker's address, violating the invariant that rollv2 must only be callable by the token's beneficiary or authorized roles, causing scoped impact: theft of LP lock proceeds or accumulated fees? Local proof idea: unit test calling rollv2 with attacker-controlled packedParams from a non-beneficiary address; assert revert.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_eb28b7c5-03dc-4c54-94e9-a7c7b9dc5a90?mode=deep",
+    "timestamp": "2026-07-07 10:04:18.943889",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: swapExactInput (multi-hop nativeToQuote, SWAP_VIA_V3_500_POOL path)] Can an unprivileged ATTACKER call swapExactInput with inputToken=address(0) for a quote-token token using SWAP_VIA_V3_500_POOL, and if the V3 500-fee pool for WETH/quoteToken has been manipulated (e.g. via a flash loan to move the price), the nativeToQuote swap returns fewer quote tokens than expected, but the bonding-curve buy credits the full msg.value equivalent, causing the reserve to be over-credited, violating the invariant that reserve increase must equal actual quote tokens received, causing scoped impact: attacker buys tokens at a discount by manipulating the intermediate V3 pool? Local proof idea: fork test with a flash-loan price manipulation of the WETH/quoteToken V3 pool; assert reserve increase equals actual quote tokens deposited.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_a71bc23d-9074-4ef4-8597-17c97d5cabce?mode=deep",
+    "timestamp": "2026-07-07 10:04:33.721376",
+    "report_generated": false
+  },
+  {
+    "question": "[File: 'src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'] [Function: newTokenV6/V7 (TOKEN_TAXED_V3, dividendBps>0 with dividendToken==quoteToken enforcement)] Can an unprivileged ATTACKER launch a TOKEN_TAXED_V3 with dividendBps>0 and dividendToken set to a malicious ERC20 that implements a non-standard transfer (e.g. fee-on-transfer or rebasing), causing the dividend contract to receive fewer tokens than expected when the TaxProcessor swaps quote tokens to dividend tokens, but the dividend tracker credits the full expected amount, violating the invariant that dividend shares must equal actual tokens held by the dividend contract, causing scoped impact: dividend contract becomes insolvent and legitimate dividend claimants cannot withdraw? Local proof idea: unit test with a fee-on-transfer dividend token; assert dividend contract balance equals sum of credited shares.",
+    "url": "https://deepwiki.com/search/-deepwiki-candidate-triage-pro_77bc5096-5dbd-4e61-a607-70ed4cfcda7f?mode=deep",
+    "timestamp": "2026-07-07 10:04:48.203233",
+    "report_generated": false
+  }
+]
