@@ -1,4 +1,0 @@
-[
-  "'File Name: src/ConfidencePool.sol -> Scope: Low: concrete, reachable incorrect behavior or state handling with minimal financial impact, no direct funds at risk, and a real protocol/user consequence; exclude gas, QA, informational, style, speculative, and purely theoretical observations.'",
-  "'File Name: src/ConfidencePoolFactory.sol -> Scope: Low: concrete, reachable incorrect behavior or state handling with minimal financial impact, no direct funds at risk, and a real protocol/user consequence; exclude gas, QA, informational, style, speculative, and purely theoretical observations.'"
-]
