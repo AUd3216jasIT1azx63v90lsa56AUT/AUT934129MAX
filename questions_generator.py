@@ -78,7 +78,9 @@ class GenerateQuestions:
         )
 
         last_error = None
-        for _ in range(10):
+        # A retry after submission starts from the generated search page, not
+        # the repository form, and cannot safely resubmit the same prompt.
+        for _ in range(1):
             try:
 
                 # # wait for the form containing the textarea
@@ -123,7 +125,7 @@ class GenerateQuestions:
                 time.sleep(10)
                 continue
 
-        raise RuntimeError(f"DeepWiki question submission failed after 10 attempts: {last_error}")
+        raise RuntimeError(f"DeepWiki question submission failed: {last_error}")
 
     def save_to_questions(self, question_gotten, url, response_text):
         """Save the prompt, URL, and durable DeepWiki response."""
