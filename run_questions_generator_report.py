@@ -104,26 +104,44 @@ def move_files_back_to_scope_questions():
 
 
 def main():
+    report = None
     try:
         pending_urls = get_scope_questions_pending()
         total = len(pending_urls)
 
         if total == 0:
-            print("No pending reports to generate")
-        else:
-            print(f"Found {total} URLs needing reports")
+            raise RuntimeError("No pending reports to generate")
 
-            counter = 0
-            max_reports = batch_limit(500)
-            report = GetQuestions(teardown=True)
-            for i, url in enumerate(pending_urls):
+        print(f"Found {total} URLs needing reports")
+
+        counter = 0
+        generated_questions = 0
+        failures = []
+        max_reports = batch_limit(500)
+        report = GetQuestions(teardown=True)
+        for i, url in enumerate(pending_urls):
+            try:
                 print(f"[{i + 1}/{total}] Generating report for: {url}")
-                report.get_questions(url)
+                generated_questions += report.get_questions(url)
                 counter += 1
                 if counter >= max_reports:
                     break
+            except Exception as exc:
+                failures.append(f"{url}: {exc}")
+                print(f"Report generation failed: {failures[-1]}")
 
-            print(f"\n=== Completed {total} reports ===")
+        if failures:
+            raise RuntimeError(
+                f"{len(failures)} of {counter + len(failures)} reports failed: "
+                + " | ".join(failures)
+            )
+        if generated_questions == 0:
+            raise RuntimeError("Report generation produced zero audit questions")
+
+        print(
+            f"\n=== Completed {counter} reports with "
+            f"{generated_questions} audit questions ==="
+        )
 
     except Exception as e:
         print(f"\n!!! ERROR: {e}")
@@ -133,6 +151,10 @@ def main():
             print(f"Moved {len(moved)} files back to automation directory")
         else:
             print("No files were moved back")
+        raise
+    finally:
+        if report is not None:
+            report.driver.quit()
 
 
 

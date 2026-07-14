@@ -17,10 +17,10 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 from questions import BASE_URL, question_generator
 import pyperclip
-import re
 from typing import List
 
 from bot_runtime import batch_limit
+from question_report_parser import parse_question_content
 
 
 class GenerateQuestions:
@@ -201,41 +201,37 @@ class GetQuestions:
 
             all_questions = self.get_question_content(clipboard_content)
 
-            try:
-                # Split into chunks of 25
-                chunk_size = 25
-                total_questions = len(all_questions)
+            if not all_questions:
+                raise RuntimeError(
+                    "DeepWiki response contained no parseable [File: ...] audit questions"
+                )
 
-                for i in range(0, total_questions, chunk_size):
-                    # Get a chunk of 25 questions
-                    chunk = all_questions[i:i + chunk_size]
+            # Split into chunks of 25
+            chunk_size = 25
+            total_questions = len(all_questions)
 
-                    # Generate a unique filename
-                    filename = f"{str(uuid.uuid4())}.json".replace("-", "")
-                    filepath = os.path.join(question_directory, filename)
+            for i in range(0, total_questions, chunk_size):
+                chunk = all_questions[i:i + chunk_size]
+                filename = f"{str(uuid.uuid4())}.json".replace("-", "")
+                filepath = os.path.join(question_directory, filename)
 
-                    # Save the chunk to a new file
-                    with open(filepath, 'w', encoding='utf-8') as f:
-                        json.dump(chunk, f, indent=2, ensure_ascii=False)
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    json.dump(chunk, f, indent=2, ensure_ascii=False)
 
-                    print(f"Saved {len(chunk)} questions to {filepath}")
+                print(f"Saved {len(chunk)} questions to {filepath}")
 
-                print(
-                    f"\nSuccessfully split {total_questions} questions into {((total_questions - 1) // chunk_size) + 1} files")
-            except Exception as a:
-                print(a)
+            chunk_count = (total_questions + chunk_size - 1) // chunk_size
+            print(f"\nSuccessfully split {total_questions} questions into {chunk_count} files")
+            return total_questions
 
         except Exception as e:
-            print(f"An error occurred: {str(e)}")
+            raise RuntimeError(f"Failed to retrieve questions from {url}: {e}") from e
 
     def get_question_content(self, clip_board_content: str) -> List[str]:
         """
             Extracts security audit questions from the provided text using regex.
             """
-        pattern = r'"(\[File:.*?)"'
-        questions = re.findall(pattern, clip_board_content, flags=re.DOTALL)
-        # Optional: Clean up whitespace (strip) for each question found
-        return [q.strip() for q in questions]
+        return parse_question_content(clip_board_content)
 
 
 def generate_file_path_for_scope():

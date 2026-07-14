@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import mock_open, patch
 
 import questions
+from question_report_parser import parse_question_content
 import workflow_chain
 from bot_blueprint import load_blueprint
 from bot_runtime import batch_limit, smoke_enabled, smoke_limit
@@ -237,6 +238,23 @@ class RuntimeLimitTests(unittest.TestCase):
         with patch.dict(os.environ, {"BOT_SMOKE_LIMIT": "0"}, clear=True):
             with self.assertRaises(ValueError):
                 smoke_limit()
+
+
+class QuestionReportParsingTests(unittest.TestCase):
+    def test_parses_markdown_question_blocks_without_json_quotes(self):
+        response = """Audit questions:\n1. [File: src/A.sol] [Function: stake] Can accounting drift?\n2. [File: src/B.sol] [Function: claim] Can a user overclaim?\n"""
+
+        questions_found = parse_question_content(response)
+
+        self.assertEqual(len(questions_found), 2)
+        self.assertTrue(questions_found[0].startswith("[File: src/A.sol]"))
+        self.assertTrue(questions_found[1].startswith("[File: src/B.sol]"))
+
+    def test_empty_or_unrelated_response_produces_no_questions(self):
+        self.assertEqual(
+            parse_question_content("DeepWiki is still loading"),
+            [],
+        )
 
 
 class WorkflowChainTests(unittest.TestCase):
