@@ -184,7 +184,7 @@ class GetQuestions:
         try:
             self.driver.get(url)
 
-            wait = WebDriverWait(self.driver, 20)
+            wait = WebDriverWait(self.driver, 180)
             #  this would click the copy button
             copy_button_selector = (By.CSS_SELECTOR, '[aria-label="Copy"]')
             all_copy_buttons = wait.until(
@@ -195,15 +195,31 @@ class GetQuestions:
 
             xpath = "//div[@role='menuitem' and normalize-space(text())='Copy response']"
             el = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+            pyperclip.copy("")
             el.click()
 
-            clipboard_content = pyperclip.paste()
+            try:
+                clipboard_content = WebDriverWait(self.driver, 30).until(
+                    lambda _: pyperclip.paste().strip() or False
+                )
+            except Exception:
+                clipboard_content = ""
 
+            page_content = self.driver.find_element(By.TAG_NAME, "body").text
             all_questions = self.get_question_content(clipboard_content)
+            if not all_questions:
+                all_questions = self.get_question_content(page_content)
+
+            print(
+                "Question extraction sources: "
+                f"clipboard_chars={len(clipboard_content)}, "
+                f"page_chars={len(page_content)}"
+            )
 
             if not all_questions:
                 raise RuntimeError(
-                    "DeepWiki response contained no parseable [File: ...] audit questions"
+                    "DeepWiki response contained no parseable [File: ...] audit questions "
+                    f"(clipboard_chars={len(clipboard_content)}, page_chars={len(page_content)})"
                 )
 
             # Split into chunks of 25
