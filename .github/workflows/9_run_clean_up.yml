@@ -1,3 +1,4 @@
+# GitHub Actions registration refresh for AUT934129MAX.
 name: 9 Run Clean Up Automation
 
 on:

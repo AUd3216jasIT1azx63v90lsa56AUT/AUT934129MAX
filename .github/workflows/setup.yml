@@ -1,3 +1,4 @@
+# GitHub Actions registration refresh for AUT934129MAX.
 name: Setup Repo
 
 on:

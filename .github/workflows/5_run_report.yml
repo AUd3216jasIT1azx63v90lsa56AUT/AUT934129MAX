@@ -1,3 +1,4 @@
+# GitHub Actions registration refresh for AUT934129MAX.
 name: 5 Run Report Automation
 
 on:

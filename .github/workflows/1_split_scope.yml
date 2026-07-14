@@ -1,3 +1,4 @@
+# GitHub Actions registration refresh for AUT934129MAX.
 name: 1 Generate Scope
 
 on:

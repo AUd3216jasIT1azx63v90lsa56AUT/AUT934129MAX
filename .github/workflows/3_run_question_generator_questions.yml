@@ -1,3 +1,4 @@
+# GitHub Actions registration refresh for AUT934129MAX.
 name: 3 Run Question Generator Report
 
 on:
