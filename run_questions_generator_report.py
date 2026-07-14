@@ -137,7 +137,9 @@ def main():
         counter = 0
         generated_questions = 0
         failures = []
-        max_reports = batch_limit(500)
+        # BOT_SMOKE_LIMIT limits how many input files are moved into pending.
+        # Every record in each selected file must be processed to avoid losing
+        # the unprocessed half of a scope file.
         for i, item in enumerate(pending_items):
             url = item["url"]
             try:
@@ -148,10 +150,8 @@ def main():
                 else:
                     if report is None:
                         report = GetQuestions(teardown=True)
-                    generated_questions += report.get_questions(url)
+                    generated_questions += report.get_questions(url, item.get("question"))
                 counter += 1
-                if counter >= max_reports:
-                    break
             except Exception as exc:
                 failures.append(f"{url}: {exc}")
                 print(f"Report generation failed: {failures[-1]}")

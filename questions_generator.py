@@ -177,12 +177,54 @@ class GetQuestions:
         self.collections_url = []
         super(GetQuestions, self).__init__()
 
-    def get_questions(self, url):
+    def get_questions(self, url, question_gotten=None):
         question_directory = os.environ.get('QUESTION_DIR', 'question')
         os.makedirs(question_directory, exist_ok=True)
 
         self.driver.get(url)
-        timeout_seconds = int(os.environ.get("DEEPWIKI_REPORT_TIMEOUT", "300"))
+        try:
+            all_questions = self.wait_for_response(30)
+        except RuntimeError:
+            if not question_gotten:
+                raise
+            print("Saved URL has no durable response; resubmitting prompt in this browser session")
+            self.submit_question(question_gotten)
+            timeout_seconds = int(os.environ.get("DEEPWIKI_REPORT_TIMEOUT", "600"))
+            all_questions = self.wait_for_response(timeout_seconds)
+
+        return self.save_question_chunks(all_questions, question_directory)
+
+    def submit_question(self, question_gotten):
+        self.driver.get(BASE_URL)
+        wait = WebDriverWait(self.driver, 120)
+        form = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'form')))
+        textarea = form.find_element(By.CSS_SELECTOR, 'textarea')
+
+        fast_button = wait.until(EC.element_to_be_clickable((
+            By.XPATH,
+            '//button[.//span[normalize-space(text())="Fast"]]',
+        )))
+        fast_button.click()
+        deep_research = wait.until(EC.element_to_be_clickable((
+            By.XPATH,
+            "//div[@role='menuitem' and .//span[normalize-space(text())='Deep Research']]",
+        )))
+        deep_research.click()
+
+        formatted_question = question_generator(question_gotten)
+        textarea.click()
+        textarea.clear()
+        self.driver.execute_script(
+            "arguments[0].value = arguments[1];", textarea, formatted_question
+        )
+        self.driver.execute_script(
+            "arguments[0].dispatchEvent(new Event('input', { bubbles: true }));",
+            textarea,
+        )
+        textarea.send_keys(".. ")
+        textarea.send_keys(Keys.ENTER)
+
+    def wait_for_response(self, timeout_seconds):
         deadline = time.time() + timeout_seconds
         last_error = None
 
@@ -205,7 +247,7 @@ class GetQuestions:
                         )
                         all_questions = self.get_question_content(clipboard_content)
                         if all_questions:
-                            return self.save_question_chunks(all_questions, question_directory)
+                            return all_questions
                         last_error = RuntimeError(
                             f"Copy response returned {len(clipboard_content)} chars but no questions"
                         )
