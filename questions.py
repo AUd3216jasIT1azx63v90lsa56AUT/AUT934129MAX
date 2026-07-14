@@ -187,8 +187,9 @@ Rules:
 * Attacker is unprivileged: {BLUEPRINT["attacker_profile"]}.
 * Do not rely on admin compromise, malicious governance, leaked keys, impossible oracle values, pure external oracle failure, user mistakes, or unsupported third-party behavior.
 * Reject DoS/freeze/liveness/griefing questions unless the same path gives the attacker direct fund or reward extraction.
-* Generate 12 to 30 unique high-signal questions. Stop as soon as the target's real unprivileged attack surface is exhausted; quality and validity take priority over filling the maximum.
-* A smaller sound list is correct. Never add admin-only, duplicate, generic, speculative, or out-of-scope filler to reach a quota.
+* Generate 0 to 30 unique high-signal questions. Stop as soon as the target's real unprivileged attack surface is exhausted; quality and validity take priority over filling the maximum.
+* If no valid scoped question remains after the rejection rules, immediately output `questions = []`.
+* A small or empty sound list is correct. Never add admin-only, duplicate, generic, speculative, or out-of-scope filler to reach a quota.
 * At least 70% must be multi-step flow, invariant, fuzz, accounting, state-transition, or cross-module questions.
 * Every question must be testable later by local PoC, unit test, fuzz test, invariant test, or differential test.
 * Avoid generic checklist questions and repeated root causes.

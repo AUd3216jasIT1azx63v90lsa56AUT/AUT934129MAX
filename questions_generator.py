@@ -211,6 +211,9 @@ class GetQuestions:
                         all_questions = self.get_question_content(clipboard_content)
                         if all_questions:
                             return all_questions
+                        if re.search(r"\bquestions\s*=\s*\[\s*\]", clipboard_content):
+                            print("DeepWiki completed this target with zero valid scoped questions")
+                            return []
                         last_error = RuntimeError(
                             f"Copy response returned {len(clipboard_content)} chars but no questions"
                         )
