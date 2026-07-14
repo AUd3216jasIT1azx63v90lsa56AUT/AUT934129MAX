@@ -187,8 +187,7 @@ Rules:
 * Attacker is unprivileged: {BLUEPRINT["attacker_profile"]}.
 * Do not rely on admin compromise, malicious governance, leaked keys, impossible oracle values, pure external oracle failure, user mistakes, or unsupported third-party behavior.
 * Reject DoS/freeze/liveness/griefing questions unless the same path gives the attacker direct fund or reward extraction.
-* Generate exactly the 5 highest-signal unique questions for this file and scoped impact, then stop.
-* Rank real unprivileged attack surfaces above breadth. Never add admin-only, duplicate, generic, speculative, or out-of-scope filler.
+* Generate 35 to 60 high-signal questions.
 * At least 70% must be multi-step flow, invariant, fuzz, accounting, state-transition, or cross-module questions.
 * Every question must be testable later by local PoC, unit test, fuzz test, invariant test, or differential test.
 * Avoid generic checklist questions and repeated root causes.
@@ -204,7 +203,7 @@ Each question must include:
     "local proof idea"
 ])}
 
-Your first output token must be `questions` and your final output token must close the list. Output only valid Python. No markdown. No analysis. No explanations.
+Output only valid Python. No markdown. No explanations.
 
 questions = [
     "[File: {target_file}] [Function: symbol_or_module] Can an unprivileged ATTACKER_ACTION under PRECONDITIONS trigger CALL_SEQUENCE, violating INVARIANT, causing scoped impact: SCOPE_IMPACT? Local proof idea: add/run TEST_TYPE with PARAMETERS and assert EXPECTED_PROPERTY.",
