@@ -57,10 +57,7 @@ def main():
         for i, question in enumerate(questions, 1):
             print(f"[{i}/{total}] Processing: {question[:50]}...")
             bot = GenerateQuestions(teardown=True)
-            try:
-                bot.ask_question(question)
-            finally:
-                bot.driver.quit()
+            bot.ask_question(question)
 
             if i >= max_questions:
                 print(f"Reached the limit of {max_questions} questions")
@@ -80,7 +77,6 @@ def main():
                 print(f"Moved {pending_file} back to {scope_dir} due to error")
             else:
                 print(f"Failed to move {pending_file} back to {scope_dir}")
-        raise
 
 
 if __name__ == '__main__':

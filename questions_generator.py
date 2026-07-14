@@ -17,10 +17,10 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 from questions import BASE_URL, question_generator
 import pyperclip
+import re
 from typing import List
 
 from bot_runtime import batch_limit
-from question_report_parser import parse_question_content
 
 
 class GenerateQuestions:
@@ -78,9 +78,7 @@ class GenerateQuestions:
         )
 
         last_error = None
-        # A retry after submission starts from the generated search page, not
-        # the repository form, and cannot safely resubmit the same prompt.
-        for _ in range(1):
+        for _ in range(10):
             try:
 
                 # # wait for the form containing the textarea
@@ -105,18 +103,11 @@ class GenerateQuestions:
 
                 textarea.send_keys(Keys.ENTER)
 
-                def completed_response(driver):
-                    body_text = driver.find_element(By.TAG_NAME, "body").text
-                    if parse_question_content(body_text):
-                        return body_text
-                    return False
-
-                response_text = wait.until(completed_response)
+                time.sleep(10)
                 current_url = self.driver.current_url
 
-                # Persist the response itself. A later workflow runs in a fresh
-                # browser session and cannot rely on this search URL alone.
-                self.save_to_questions(question_gotten, current_url, response_text)
+                # add the current url to collections
+                self.save_to_questions(question_gotten, current_url)
                 return current_url
             except Exception as a:
                 last_error = a
@@ -125,10 +116,10 @@ class GenerateQuestions:
                 time.sleep(10)
                 continue
 
-        raise RuntimeError(f"DeepWiki question submission failed: {last_error}")
+        raise RuntimeError(f"DeepWiki question submission failed after 10 attempts: {last_error}")
 
-    def save_to_questions(self, question_gotten, url, response_text):
-        """Save the prompt, URL, and durable DeepWiki response."""
+    def save_to_questions(self, question_gotten, url):
+        """Save question and URL to questions.json"""
         collections_file = config("SCOPE_QUESTIONS_PATH")
 
         # Load existing data or start fresh
@@ -147,7 +138,6 @@ class GenerateQuestions:
         data.append({
             "question": question_gotten,
             "url": url,
-            "response": response_text,
             "questions_generated": False
         })
 
@@ -194,7 +184,7 @@ class GetQuestions:
         try:
             self.driver.get(url)
 
-            wait = WebDriverWait(self.driver, 180)
+            wait = WebDriverWait(self.driver, 20)
             #  this would click the copy button
             copy_button_selector = (By.CSS_SELECTOR, '[aria-label="Copy"]')
             all_copy_buttons = wait.until(
@@ -205,59 +195,47 @@ class GetQuestions:
 
             xpath = "//div[@role='menuitem' and normalize-space(text())='Copy response']"
             el = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
-            pyperclip.copy("")
             el.click()
 
-            try:
-                clipboard_content = WebDriverWait(self.driver, 30).until(
-                    lambda _: pyperclip.paste().strip() or False
-                )
-            except Exception:
-                clipboard_content = ""
+            clipboard_content = pyperclip.paste()
 
-            page_content = self.driver.find_element(By.TAG_NAME, "body").text
             all_questions = self.get_question_content(clipboard_content)
-            if not all_questions:
-                all_questions = self.get_question_content(page_content)
 
-            print(
-                "Question extraction sources: "
-                f"clipboard_chars={len(clipboard_content)}, "
-                f"page_chars={len(page_content)}"
-            )
+            try:
+                # Split into chunks of 25
+                chunk_size = 25
+                total_questions = len(all_questions)
 
-            if not all_questions:
-                raise RuntimeError(
-                    "DeepWiki response contained no parseable [File: ...] audit questions "
-                    f"(clipboard_chars={len(clipboard_content)}, page_chars={len(page_content)})"
-                )
+                for i in range(0, total_questions, chunk_size):
+                    # Get a chunk of 25 questions
+                    chunk = all_questions[i:i + chunk_size]
 
-            # Split into chunks of 25
-            chunk_size = 25
-            total_questions = len(all_questions)
+                    # Generate a unique filename
+                    filename = f"{str(uuid.uuid4())}.json".replace("-", "")
+                    filepath = os.path.join(question_directory, filename)
 
-            for i in range(0, total_questions, chunk_size):
-                chunk = all_questions[i:i + chunk_size]
-                filename = f"{str(uuid.uuid4())}.json".replace("-", "")
-                filepath = os.path.join(question_directory, filename)
+                    # Save the chunk to a new file
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        json.dump(chunk, f, indent=2, ensure_ascii=False)
 
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    json.dump(chunk, f, indent=2, ensure_ascii=False)
+                    print(f"Saved {len(chunk)} questions to {filepath}")
 
-                print(f"Saved {len(chunk)} questions to {filepath}")
-
-            chunk_count = (total_questions + chunk_size - 1) // chunk_size
-            print(f"\nSuccessfully split {total_questions} questions into {chunk_count} files")
-            return total_questions
+                print(
+                    f"\nSuccessfully split {total_questions} questions into {((total_questions - 1) // chunk_size) + 1} files")
+            except Exception as a:
+                print(a)
 
         except Exception as e:
-            raise RuntimeError(f"Failed to retrieve questions from {url}: {e}") from e
+            print(f"An error occurred: {str(e)}")
 
     def get_question_content(self, clip_board_content: str) -> List[str]:
         """
             Extracts security audit questions from the provided text using regex.
             """
-        return parse_question_content(clip_board_content)
+        pattern = r'"(\[File:.*?)"'
+        questions = re.findall(pattern, clip_board_content, flags=re.DOTALL)
+        # Optional: Clean up whitespace (strip) for each question found
+        return [q.strip() for q in questions]
 
 
 def generate_file_path_for_scope():
