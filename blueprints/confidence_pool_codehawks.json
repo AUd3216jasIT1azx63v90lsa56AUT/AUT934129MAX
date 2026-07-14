@@ -1,0 +1,6 @@
+{
+  "compatibility_alias": "portal_fund_reward.json",
+  "note": "The machine's unchanged loader still points at portal_fund_reward.json. That configuration file now contains the canonical BattleChain Confidence Pools contest blueprint. This named file exists as an explicit target marker without changing runnable Python code.",
+  "source_repo": "incjanta/confidence-pool",
+  "active_blueprint": "blueprints/portal_fund_reward.json"
+}

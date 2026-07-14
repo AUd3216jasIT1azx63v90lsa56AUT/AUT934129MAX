@@ -17,12 +17,16 @@ class BlueprintPromptTests(unittest.TestCase):
     def test_default_blueprint_preserves_deepwiki_memory(self):
         blueprint = load_blueprint()
 
-        self.assertEqual(blueprint["repo_name"], "Portal")
-        self.assertIn("src/Portal.sol", blueprint["scope_files"])
-        self.assertIn("src/PortalBase.sol", blueprint["scope_files"])
-        self.assertEqual(len(blueprint["target_scopes"]), 2)
-        self.assertTrue(any("fund extraction" in scope.lower() for scope in blueprint["target_scopes"]))
-        self.assertTrue(any("reward extraction" in scope.lower() for scope in blueprint["target_scopes"]))
+        self.assertEqual(blueprint["repo_name"], "confidence-pool")
+        self.assertEqual(
+            blueprint["scope_files"],
+            ["src/ConfidencePool.sol", "src/ConfidencePoolFactory.sol"],
+        )
+        self.assertEqual(len(blueprint["target_scopes"]), 4)
+        self.assertTrue(any("CodeHawks High" in scope for scope in blueprint["target_scopes"]))
+        self.assertTrue(any(scope.startswith("Medium:") for scope in blueprint["target_scopes"]))
+        self.assertTrue(any(scope.startswith("Low:") for scope in blueprint["target_scopes"]))
+        self.assertTrue(any("HARD REJECT" in item for item in blueprint["known_rejection_memory"]))
 
     def test_audit_prompt_uses_triage_verdicts_not_final_validation(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -50,14 +54,14 @@ class BlueprintPromptTests(unittest.TestCase):
 
             with patch.dict(os.environ, {"LIVE_CONTEXT_PATH": str(live_context)}, clear=False):
                 prompt = questions.question_generator(
-                    "'File Name: src/Portal.sol -> Scope: Critical Fund extraction or protocol value drain'"
+                    "'File Name: src/ConfidencePool.sol -> Scope: High direct loss of staker principal'"
                 )
 
         self.assertIn("DeepWiki Memory Blueprint", prompt)
         self.assertIn("## Live Context Snapshot", prompt)
         self.assertIn("Known rejection memory", prompt)
         self.assertIn("Local proof idea", prompt)
-        self.assertIn("src/interfaces/IPortal.sol", prompt)
+        self.assertIn("src/interfaces/IConfidencePool.sol", prompt)
         self.assertIn("108382650", prompt)
 
     def test_repository_rotation_ignores_stale_other_protocol_urls(self):
@@ -65,8 +69,8 @@ class BlueprintPromptTests(unittest.TestCase):
 [
   "https://deepwiki.com/example/midnight--001",
   "https://deepwiki.com/example/623_sable_active_pool--001",
-  "https://deepwiki.com/example/Portal--001",
-  "https://deepwiki.com/example/Portal--002"
+  "https://deepwiki.com/example/confidence-pool--001",
+  "https://deepwiki.com/example/confidence-pool--002"
 ]
 """
         with patch("questions.os.path.exists", return_value=True):
@@ -76,8 +80,8 @@ class BlueprintPromptTests(unittest.TestCase):
         self.assertEqual(
             urls,
             [
-                "https://deepwiki.com/example/Portal--001",
-                "https://deepwiki.com/example/Portal--002",
+                "https://deepwiki.com/example/confidence-pool--001",
+                "https://deepwiki.com/example/confidence-pool--002",
             ],
         )
 

@@ -1,65 +1,71 @@
 {
   "max_repo": 10,
-  "source_repo": "incjanta/Portal",
-  "repo_name": "Portal",
-  "project_name": "Portal",
-  "target_label": "Portal BSC proxy at 0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
-  "paid_impact_focus": "fund extraction and reward extraction",
+  "source_repo": "incjanta/confidence-pool",
+  "repo_name": "confidence-pool",
+  "project_name": "BattleChain Confidence Pools",
+  "target_label": "2026-07 BattleChain Confidence Pools CodeHawks contest",
+  "paid_impact_focus": "all valid CodeHawks High, Medium, and Low impacts; internal Critical candidates map to CodeHawks High",
   "scope_files": [
-    "src/Portal.sol",
-    "src/PortalBase.sol",
-    "src/PortalCommon.sol",
-    "src/libraries/Curve.sol",
-    "src/libraries/PoolAddress.sol"
+    "src/ConfidencePool.sol",
+    "src/ConfidencePoolFactory.sol"
   ],
   "target_scopes": [
-    "Critical Fund extraction or protocol value drain: any bug that lets an unprivileged user gain, buy, sell, swap, launch, migrate, claim, recover, withdraw, redeem, or redirect more BNB, quote tokens, launched tokens, LP fees, tax funds, dividend funds, salt-lock fees, or other protocol/user value than intended",
-    "Critical Reward extraction or unfair reward access: any bug that lets an unprivileged user overclaim beneficiary payouts, dividend rewards, LP-fee distributions, tax rewards, migration proceeds, or token-launch related rewards beyond valid entitlement"
+    "Critical internal priority / CodeHawks High submission: catastrophic, readily exploitable loss or theft of most pool stake or bonus, protocol-wide insolvency, irreversible corruption of core settlement, or complete break of the pool's principal safety model by an unprivileged attacker.",
+    "High: direct or nearly direct loss, theft, permanent freezing, or unauthorized redirection of staker principal, bonus funds, attacker bounty, or recovery funds; repeat claims; major accounting insolvency; unprivileged control of resolution; or severe breakage of core pool settlement with high or medium likelihood.",
+    "Medium: indirect or conditional fund risk, meaningful loss under specific reachable conditions, material unfair bonus distribution, broken lifecycle/state transitions, persistent denial of important protocol functionality, stuck claims or withdrawals, scope/expiry/risk-window corruption, or factory/clone behavior that materially violates documented guarantees.",
+    "Low: concrete, reachable incorrect behavior or state handling with minimal financial impact, no direct funds at risk, and a real protocol/user consequence; exclude gas, QA, informational, style, speculative, and purely theoretical observations."
   ],
-  "live_context_hint": "BSC proxy and implementation slots, 1361+ BNB live proxy balance, AccessControl roles, token launch/swap/bonding-curve state, quote-token configuration, salt locks, staged tokens, token beneficiaries, DEX pool info, tax/dividend modules, external routers/migrators/lockers, recent TokenCreated/TokenBought/TokenSold/LaunchedToDEX/RoleGranted/fee events, and event-derived mapping keys",
+  "live_context_hint": "source contest rather than a deployed bounty: pin contest URL, repository and commit, scope files, BattleChain assumptions, registry-state transitions, actors, trusted roles, ERC20 constraints, clone/factory topology, risk-window timestamps, k=2 bonus accounting, resolution snapshots, claim reserves, scope locks, and all known accepted design trade-offs",
   "context_interfaces": [
-    "src/interfaces/IPortal.sol",
-    "src/interfaces/IToken.sol",
-    "src/interfaces/ITokenV2.sol",
-    "src/interfaces/ITokenV3.sol",
-    "src/interfaces/IMultiDexRouter.sol",
-    "src/interfaces/3rd/IPancakeV3Factory.sol"
+    "src/interfaces/IConfidencePool.sol",
+    "src/interfaces/IConfidencePoolFactory.sol",
+    "src/libraries/PoolStates.sol",
+    "lib/battlechain-safe-harbor-contracts/src/interface/IAgreement.sol",
+    "lib/battlechain-safe-harbor-contracts/src/interface/IAttackRegistry.sol",
+    "lib/battlechain-safe-harbor-contracts/src/interface/IBattleChainSafeHarborRegistry.sol"
   ],
-  "protocol_focus": "Portal is a BSC token-launch and trading portal behind a transparent-style proxy. It creates/stages/commits tokens, prices bonding-curve buys and sells, handles payable swap and creation flows, migrates liquidity to DEX/locker systems, manages quote-token and tax/dividend configuration, exposes AccessControl roles, and holds a large live BNB balance on the proxy. This audit focus is only concrete fund extraction or reward extraction.",
-  "attacker_profile": "unprivileged token creator, stager, buyer, seller, swapper, salt locker, token beneficiary, dividend recipient, LP-fee claimant, quote-token user, permit user, receiver contract, or external caller interacting through Portal entrypoints",
+  "protocol_focus": "A UUPS ConfidencePoolFactory deploys deterministic non-upgradeable ConfidencePool clones for active BattleChain Safe Harbor agreements. Pools custody ERC20 stake and optional bonus funds, lock a pool-local BattleChain account scope, observe registry lifecycle state live, seal risk windows, and resolve to SURVIVED, EXPIRED, or CORRUPTED. Survived/expired stakers receive principal plus a k=2 time-weighted bonus; corrupted pools pay a named good-faith attacker or sweep to the recovery address. Audit the complete CodeHawks-paid H/M/L surface, not only extraction.",
+  "attacker_profile": "unprivileged staker, bonus contributor, prospective staker, pool creator acting only within documented sponsor powers, claimant, attacker-bounty claimant, arbitrary caller of permissionless poke/claim/sweep functions, malicious receiver contract, or caller exploiting a role-check bypass; never assume malicious factory owner, sponsor, moderator/DAO, registry owner, leaked key, or deliberately malicious trusted registry",
   "core_invariants": [
-    "attackers must not extract BNB, quote tokens, launched tokens, LP fees, tax funds, dividend funds, salt-lock fees, or migration proceeds beyond valid entitlement",
-    "Portal proxy balances, token reserves, circulating supply, quote-token balances, beneficiary liabilities, fee accounting, tax/dividend accounting, and DEX migration balances must reconcile after every buy, sell, swap, launch, commit, claim, recover, and migration path",
-    "bonding-curve estimates and reserve/supply updates must not allow rounding, decimal, fee, or threshold errors that mint excess tokens or return excess quote/native value",
-    "salt locks, staged-token ownership, token beneficiaries, fee exemptions, blocked spammers, and role-protected state must not be bypassable by alternate entrypoints or stale event-derived state",
-    "migration and LP-lock flows must not misdirect liquidity, fees, pool ownership, locker positions, hooks, or tax/dividend proceeds to attacker-controlled addresses",
-    "recover/burn/admin-adjacent functions matter only if an unprivileged attacker can trigger or prepare a later unauthorized value movement path without admin compromise",
-    "external router, migrator, locker, permit, tax processor, dividend, hook, and token calls must not let callbacks, non-standard token behavior, or malformed return data break Portal accounting in an attacker-profitable way"
+    "only src/ConfidencePool.sol and src/ConfidencePoolFactory.sol are contest scope; vendored BattleChain interfaces, mocks, tests, scripts, and dependencies are context only",
+    "pool token balance must cover all live and snapshotted principal, bonus, bounty, and recovery liabilities, and no claimant may receive more than valid entitlement",
+    "eligibleStake, totalEligibleStake, totalBonus, time sums, snapshots, claimedBonus, corruptedReserve, bountyClaimed, and bountyEntitlement must reconcile across stake, withdraw, resolution, claim, sweep, donation, and re-flag paths",
+    "riskWindowStart and riskWindowEnd are one-way first-observation latches with timestamps safely bounded for every k=2 calculation; timing, rounding, clamping, and zero-score fallbacks cannot create an unfair or insolvent payout",
+    "scope is a valid pool-local subset when set and becomes immutable once the registry leaves NOT_DEPLOYED or NEW_DEPLOYMENT; expiry becomes immutable after the first successful stake",
+    "withdrawal stays available through all pre-attack states and becomes permanently unavailable after observed active risk; pause may block only stake and bonus inflows, never exits or settlement",
+    "outcomes and corrections follow registry-state gates; once claimsStarted records value movement, outcome finality cannot be reopened",
+    "good-faith CORRUPTED reserves the snapshotted pool for the named attacker for 180 days; bad-faith and expired bounty paths route remaining value exactly as documented",
+    "factory clone addresses, per-agreement indexes, initializer arguments, token allowlist checks, and UUPS authorization cannot be manipulated by an unprivileged caller",
+    "standard ERC20 behavior is assumed; fee-on-transfer and rebasing tokens are unsupported and must not be used as speculative attack premises"
   ],
   "high_value_surfaces": [
-    "payable token launch paths: newTokenV2/newTokenV3/newTokenV4/newTokenV5/newTokenV6/newTokenV7, stageNewTokenV5, commitNewTokenV5, lockSalt, buyOnCreation",
-    "trading paths: buy, sell, swapExactInput, swapExactInputV3, quoteExactInput, previewBuy, previewSell, previewRedeem, redeem",
-    "claim and beneficiary paths: claim, delegateClaim, setTokenBeneficiary, BeneficiaryClaimed, TaxTokenAddressesUpdated, TokenDividendTokenUpdated",
-    "migration and LP-fee paths: addV4LPLiquidity, collectV4Fees, updateTokenPoolInfo, LaunchedToDEX, V4LPFeesCollected, locker/migrator/router integrations",
-    "tax/dividend/recovery paths: recoverStuckDividend, recoverStuckTaxToken, burnStuckTaxToken, changeMarketWallet, excludeAddressFromDividends, setTokenDividendToken, updateTaxTokenAddresses",
-    "configuration and role paths: grantRole, revokeRole, renounceRole, setQuoteTokenConfiguration, setFlapFeeProfile, setFeeExemption, setBitFlags, halt, haltNewTokenV7, setSpammerBlockedBatch",
-    "packed token state and mappings: _packedTokenStates, redeemRates, lpLocks, _tokenBeneficiaries, _quoteTokenConfigurations, extensions, _dexPools, _stagedTokenStagers, salt locks, role membership",
-    "math/libraries: bonding-curve reserve/supply rounding, reserve token decimals, pool address prediction, DEX threshold and fee-profile calculations"
+    "stake, contributeBonus, withdraw, fee-on-transfer balance-difference handling, expiry boundaries, and registry deposit-state gates",
+    "flagOutcome correction rules, claimsStarted finality, outcome snapshots, goodFaith/attacker validation, and state-dependent SURVIVED/CORRUPTED decisions",
+    "claimSurvived, claimExpired, claimCorrupted, claimAttackerBounty, sweepUnclaimedCorrupted, and sweepUnclaimedBonus under partial claims, dust, donations, token balance deficits, and repeated calls",
+    "riskWindowStart/riskWindowEnd observation via all entrypoints and pokeRiskWindow, direct state skips, delayed observations, expiry caps, timestamp math, and uint32 limits",
+    "k=2 bonus numerator/denominator math, per-deposit time sums, user clamping, global snapshots, zero-score fallback, rounding, late entry, withdrawals, and multi-user ordering",
+    "setPoolScope validation and lock timing; agreement scope changes; duplicate, empty, zero, and out-of-agreement account lists; pool-local versus agreement-wide corruption",
+    "factory initialize/createPool, deterministic clone salts and indexes, initializer atomicity, implementation selection, stake-token allowlist, agreement ownership validation, and multiple pools per agreement",
+    "pause boundaries, expiry/recovery setters, two-step ownership, reentrancy and malicious receiver/token callbacks only within the supported standard-token model",
+    "cross-function and transaction-order interactions among registry transitions, staking, poking, withdrawal, moderator flagging, permissionless expiry resolution, claiming, re-flagging, sweeping, and post-resolution donations"
   ],
   "impact_mapping": [
-    "Fund extraction: attacker receives BNB, quote tokens, launched tokens, tax funds, dividend funds, LP fees, migration proceeds, salt-lock value, or claimable beneficiary value without paying the required amount or satisfying entitlement",
-    "Reward extraction: attacker overclaims beneficiary proceeds, dividend/LP-fee rewards, tax rewards, launch incentives, migration proceeds, or any repeated/delegated claim value",
-    "Insolvency with extraction: attacker creates a Portal/token/accounting mismatch then withdraws, sells, redeems, swaps, migrates, claims, or recovers more value than funded",
-    "Bad launch or migration value capture: attacker manipulates token launch, staged-token commit, salt ownership, DEX threshold, pool info, or migration configuration to capture other users' funds or protocol reserves",
-    "Unauthorized redirection: funds or rewards move to an attacker-controlled beneficiary, fee receiver, dividend token, pool, locker, router, migrator, or tax processor without valid authorization",
-    "Accounting corruption only counts if it leads to attacker-controlled over-buy, over-sell, over-swap, over-claim, over-recover, over-migration, or reward overpayment"
+    "Critical internal -> CodeHawks High: catastrophic readily exploitable drain, protocol-wide insolvency, or complete irreversible break of core settlement.",
+    "High: principal/bonus/bounty theft or permanent freeze, repeated or excessive claims, unprivileged outcome control, major insolvency, or severe core-function failure with sufficient likelihood.",
+    "Medium: conditional or indirect fund loss, meaningful unfair distribution, persistent lifecycle or availability failure, stuck value, broken scope/expiry/finality guarantee, or material factory/clone malfunction.",
+    "Low: concrete reachable incorrect state or behavior with minimal impact and no direct funds at risk; must still have a real consequence and proof.",
+    "For compatibility with the current report schema, route value/accounting findings through fund_extraction and distribution/entitlement findings through reward_extraction, but do not reject other H/M/L findings described by target_scopes.",
+    "Submit CodeHawks High and Medium individually; aggregate Low findings as the current CodeHawks reporting guidance recommends."
   ],
   "known_rejection_memory": [
-    "Reject DoS, pause, halt, spam blocking, liveness, failed launch, gas-only, griefing, and temporary lock claims unless the same reachable path transfers excess value to the attacker.",
-    "Reject admin-only role misuse, proxy-admin compromise, governance/key compromise, or maintainer configuration mistakes unless an unprivileged attacker can trigger the value extraction path.",
-    "Reject pure external router/migrator/locker/token failure unless Portal accepts attacker-controlled data or sequencing that makes Portal itself overpay or misaccount.",
-    "Reject expected bonding-curve price movement, public market competition, ordinary MEV, slippage chosen by the user, or documented tax/fee behavior unless a protected invariant is broken.",
-    "Reject stale event/key speculation unless live context or local fork tests prove the current BSC deployment has matching preconditions.",
-    "Reject source-only theories that do not connect to the live proxy address, implementation ABI, reachable entrypoint, concrete value movement, and local proof plan."
+    "HARD REJECT any finding whose exploit premise is a malicious, sneaky, compromised, mistaken, or colluding factory owner, pool sponsor/owner, moderator/DAO, SafeHarborRegistry owner, attack-registry controller, proxy upgrader, recovery address, or leaked privileged key acting within documented authority.",
+    "Do not reject a real unprivileged role bypass, missing authorization, privilege escalation, or invariant failure triggered by an ordinary trusted action; the rejection applies to assuming trusted actors deliberately abuse their granted powers.",
+    "Reject all behavior expressly accepted in docs/DESIGN.md: active-risk states are legally attackable rather than breached; expiry during active risk resolves EXPIRED; UNDER_ATTACK deposits are allowed; first-claim finality closes re-flagging; local risk observation is decoupled from principal resolution; the no-risk-window CORRUPTED race is accepted; the 180-day auto-CORRUPTED fallback is scope-blind and staker-pessimistic; first-observed terminal timing residuals and the zero-score amount fallback are accepted; scope is pool-local and moderator-judged; the registry is a trusted singleton; corrupted sweep/bounty repeatability and donation recovery are intentional.",
+    "Reject fee-on-transfer, fee-on-sender, rebasing, malicious, callback-bearing, or otherwise non-standard ERC20 premises unless the issue remains exploitable with a standard ERC20; these token classes are explicitly unsupported.",
+    "Reject findings solely in interfaces, libraries, dependencies, mocks, scripts, tests, or BattleChain upstream contracts; they may be used only to prove impact in the two in-scope contracts.",
+    "Reject gas, QA, informational, style, comments, naming, best-practice-only, vague reentrancy, generic centralization, hypothetical future integration, and missing-event claims without a concrete paid H/M/L consequence.",
+    "Reject admin input/call-order mistakes, zero-address checks reachable only by trusted setters, ordinary market/MEV competition, user self-harm, accidental token transfers, unsupported integrations, and speculative liveness with no demonstrated protocol impact.",
+    "Reject duplicates of documented known behavior or identical root causes; require a reachable call sequence, affected invariant, impact/likelihood classification, and preferably a coded Foundry PoC before promotion.",
+    "CodeHawks has no separate Critical submission category for this contest; internally Critical candidates must be submitted as High if proven valid."
   ]
 }

@@ -1,203 +1,135 @@
 {
-  "schema_version": "portal-live-context-seed-v1",
+  "schema_version": "contest-source-context-v1",
+  "captured_at": "2026-07-14T10:30:00Z",
+  "machine": "AUT934129MAX",
+  "mode": "live_codehawks_source_contest",
+  "contest": {
+    "name": "BattleChain Confidence Pools",
+    "platform": "Cyfrin CodeHawks",
+    "url": "https://codehawks.cyfrin.io/c/2026-07-battlechain-confidence-pools",
+    "contest_id": "cmr3o8u700000ld04cczehk98",
+    "status_at_capture": "live",
+    "start_at": "2026-07-09T12:00:00Z",
+    "end_at": "2026-07-16T12:00:00Z",
+    "nsloc": 589,
+    "total_prize_eth": 7.25,
+    "high_medium_prize_eth": 6,
+    "low_prize_eth": 1.25,
+    "accepted_submission_severities": ["High", "Medium", "Low"],
+    "internal_priority_severities": ["Critical", "High", "Medium", "Low"],
+    "critical_submission_mapping": "Critical is an internal search label only; submit a proven Critical candidate as CodeHawks High."
+  },
   "source": {
-    "generated_by": "ACTE-REPO",
-    "source_file": "../Portal/live_context.json",
-    "scanner_upgrade_target": "ACTE-REPO/acte/live_context.py schema acte-live-context-v3",
-    "note": "This seed is sufficient to bind DeepWiki prompts to the current Portal target, but should be refreshed with ACTE after RPC/network access is available."
+    "protocol_repository": "incjanta/confidence-pool",
+    "protocol_repository_url": "https://github.com/incjanta/confidence-pool",
+    "contest_repository_url": "https://github.com/CodeHawks-Contests/2026-07-bc-confidence-pools",
+    "local_target_path": "../2026-07-bc-confidence-pools",
+    "commit": "58e8ba4ce3f3277866e4926f3140e597f9554a1e",
+    "compiler": "Solidity 0.8.26 via-IR optimizer 200",
+    "framework": "Foundry",
+    "chain": "BattleChain EVM-compatible L2",
+    "deployment_context": "Source contest; no deployed pool address is required for paid validity. Fork tests require BattleChain RPC endpoints."
   },
-  "live_context_sources": {
-    "machine_setup_seed": {
-      "path": "V9KA34B0OND/setup/live_context.json",
-      "purpose": "Canonical context copied into generated DeepWiki corpus repos by setup/setup.py.",
-      "captured_at": "2026-06-21T23:44:52Z"
-    },
-    "target_repo_snapshot": {
-      "path": "../Portal/live_context.json",
-      "purpose": "Freshest Portal target snapshot available in this workspace; use it to override stale block, code-size, and common-view freshness fields when the address and implementation match.",
-      "captured_at": "2026-07-06T09:44:02Z"
-    }
-  },
-  "target_repo_live_context_snapshot": {
-    "schema_version": "acte-live-context-v1",
-    "captured_at": "2026-07-06T09:44:02Z",
-    "chain": "bsc",
-    "chain_id": 56,
-    "latest_block": 108382650,
-    "rpc_endpoint_used": "https://rpc.ankr.com/bsc/1e369e330339301de50a0f3583179c4e28b0c68f5ce0da98bce061a35ea2df4c",
-    "target": {
-      "address": "0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
-      "input_address": "0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
-      "proxy_address": "0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
-      "implementation_address": "0xeb6c62d1885c421797d0c494e693c90d4b54125a",
-      "source_address": "0xeb6c62d1885c421797d0c494e693c90d4b54125a",
-      "deployment_kind": "proxy",
-      "label": "0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
-      "explorer_url": "https://bscscan.com/address/0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
-      "code_size_bytes": 2882,
-      "native_balance_wei": 1361664283849714242664,
-      "native_symbol": "BNB"
-    },
-    "proxy_slots": {
-      "implementation_raw": "0x000000000000000000000000eb6c62d1885c421797d0c494e693c90d4b54125a",
-      "implementation": "0xeb6c62d1885c421797d0c494e693c90d4b54125a",
-      "admin_raw": "0x000000000000000000000000b2480c2d17bf4510701c4def374de6d22e039bd4",
-      "admin": "0xb2480c2d17bf4510701c4def374de6d22e039bd4",
-      "beacon_raw": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "beacon": ""
-    },
-    "implementation": {
-      "address": "0xeb6c62d1885c421797d0c494e693c90d4b54125a",
-      "provided": true,
-      "resolved_from_eip1967": false,
-      "code_size_bytes": 18392,
-      "native_balance_wei": 0
-    },
-    "common_views": {
-      "admin": "",
-      "decimals": null,
-      "factory": "",
-      "owner": "",
-      "token0": "",
-      "token1": "",
-      "totalSupply": null
-    },
-    "audit_notes": [
-      "Live balances, storage slots, and common view calls are captured from the proxy/live address when a proxy is present.",
-      "Private mappings and structs are not globally enumerable without known keys.",
-      "DeepWiki candidates must be checked against this block-specific live state before proof."
-    ]
-  },
-  "captured_at": "2026-06-21T23:44:52Z",
-  "chain": "bsc",
-  "chain_id": 56,
-  "latest_block": 51044420,
-  "rpc_endpoint_used": "https://bsc-dataseed.binance.org",
-  "target": {
-    "address": "0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
-    "input_address": "0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
-    "proxy_address": "0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
-    "implementation_address": "0xeb6c62d1885c421797d0c494e693c90d4b54125a",
-    "source_address": "0xeb6c62d1885c421797d0c494e693c90d4b54125a",
-    "deployment_kind": "proxy",
-    "label": "Portal",
-    "explorer_url": "https://bscscan.com/address/0xe2ce6ab80874fa9fa2aae65d277dd6b8e65c9de0",
-    "code_size_bytes": 2882,
-    "native_balance_wei": 1361664283849714242664,
-    "native_balance_human": "1361.664283849714242664",
-    "native_symbol": "BNB"
-  },
-  "proxy_slots": {
-    "implementation_raw": "0x000000000000000000000000eb6c62d1885c421797d0c494e693c90d4b54125a",
-    "implementation": "0xeb6c62d1885c421797d0c494e693c90d4b54125a",
-    "admin_raw": "0x000000000000000000000000b2480c2d17bf4510701c4def374de6d22e039bd4",
-    "admin": "0xb2480c2d17bf4510701c4def374de6d22e039bd4",
-    "beacon_raw": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "beacon": ""
-  },
-  "implementation": {
-    "address": "0xeb6c62d1885c421797d0c494e693c90d4b54125a",
-    "provided": true,
-    "resolved_from_eip1967": false,
-    "code_size_bytes": 23138,
-    "native_balance_wei": 0
-  },
-  "source_identity": {
-    "contract_name": "Portal",
-    "compiler_version": "v0.8.26+commit.8a97fa7a",
-    "verified": true,
-    "source_files": [
-      "src/Portal.sol",
-      "src/PortalBase.sol",
-      "src/PortalCommon.sol",
-      "src/interfaces/IPortal.sol",
-      "src/interfaces/IToken.sol",
-      "src/interfaces/ITokenV2.sol",
-      "src/interfaces/ITokenV3.sol",
-      "src/libraries/Curve.sol",
-      "src/libraries/PoolAddress.sol"
-    ]
-  },
-  "abi_inventory_seed": {
-    "high_value_entrypoints": [
-      "newTokenV2",
-      "newTokenV3",
-      "newTokenV4",
-      "newTokenV5",
-      "newTokenV6",
-      "newTokenV7",
-      "stageNewTokenV5",
-      "commitNewTokenV5",
-      "buy",
-      "buyOnCreation",
-      "sell",
-      "swapExactInput",
-      "swapExactInputV3",
-      "claim",
-      "delegateClaim",
-      "collectV4Fees",
-      "recoverStuckDividend",
-      "recoverStuckTaxToken",
-      "burnStuckTaxToken",
-      "lockSalt"
+  "scope": {
+    "in_scope": [
+      "src/ConfidencePool.sol",
+      "src/ConfidencePoolFactory.sol"
     ],
-    "role_or_config_entrypoints": [
-      "grantRole",
-      "revokeRole",
-      "renounceRole",
-      "setQuoteTokenConfiguration",
-      "setFeeExemption",
-      "setFlapFeeProfile",
-      "setSpammerBlockedBatch",
-      "setTokenBeneficiary",
-      "setTokenDividendToken",
-      "updateTaxTokenAddresses",
-      "updateTokenPoolInfo",
-      "registerExtension",
-      "halt",
-      "haltNewTokenV7"
+    "context_only": [
+      "src/interfaces/IConfidencePool.sol",
+      "src/interfaces/IConfidencePoolFactory.sol",
+      "src/libraries/PoolStates.sol",
+      "lib/battlechain-safe-harbor-contracts/**",
+      "test/**",
+      "script/**",
+      "src/mocks/**"
     ],
-    "important_events": [
-      "TokenCreated",
-      "FlapTokenStaged",
-      "TokenBought",
-      "TokenSold",
-      "TokenRedeemed",
-      "BeneficiaryClaimed",
-      "LaunchedToDEX",
-      "V4LPFeesCollected",
-      "FlapSaltLocked",
-      "FlapSaltUsed",
-      "RoleGranted",
-      "RoleRevoked",
-      "QuoteTokenConfigurationSet",
-      "TokenPoolInfoUpdated",
-      "StuckTaxTokenRecovered",
-      "DividendEmergencyWithdrawn"
+    "unsupported_token_assumptions": [
+      "fee-on-transfer",
+      "fee-on-sender",
+      "rebasing",
+      "malicious or non-standard ERC20 callbacks"
     ]
   },
-  "missing_until_acte_v3_refresh": [
-    "full ABI inventory counts and function signatures",
-    "decoded recent event samples and event-derived mapping keys",
-    "parameterized view probes such as getTokenV*, getQuoteTokenConfiguration, getSaltLock, getLocks, hasRole, previewBuy, previewSell",
-    "ERC20/native balances for dependencies and quote tokens",
-    "dependency identity for routers, migrators, lockers, hooks, token implementations, tax processors, dividend modules, and pool managers",
-    "AccessControl role member inventory for admin/operator/config roles",
-    "quote-token configuration values, fee profile values, flap-fee profiles, and tax/dividend configuration for live tokens",
-    "event-derived token addresses, staged-token stagers, salt-lock keys, token beneficiaries, LP locks, redeem rates, and dex pool mapping keys",
-    "claimable beneficiary/dividend/LP-fee amounts and protocol liabilities that can be compared with live token/native balances",
-    "recent buy/sell/claim/migration/fee/recovery event samples around the live block for replayable local fork test setup"
+  "architecture": {
+    "factory": "UUPS-upgradeable ConfidencePoolFactory with owner-controlled registry, implementation, moderator, token allowlist, pause, and upgrade authorization.",
+    "pools": "Non-upgradeable deterministic EIP-1167 ConfidencePool clones; one or many per Safe Harbor agreement.",
+    "custody": "Each clone holds all stake and optional bonus ERC20 funds.",
+    "scope_commitment": "Each pool stores a flat BattleChain account list that must be a subset of agreement scope and locks once registry state leaves NOT_DEPLOYED or NEW_DEPLOYMENT.",
+    "registry": "Pool reads IBattleChainSafeHarborRegistry.getAttackRegistry() live and does not cache the attack registry.",
+    "resolution": [
+      "SURVIVED: staker principal plus k=2 time-weighted bonus",
+      "EXPIRED: same staker payout through permissionless expiry backstop",
+      "CORRUPTED good-faith: named attacker bounty reserved for 180 days",
+      "CORRUPTED bad-faith: full pool to recoveryAddress",
+      "CORRUPTED moderator-unavailable backstop: permissionless after expiry plus 180 days when riskWindowStart was observed"
+    ]
+  },
+  "actors_and_trust": {
+    "trusted_roles": [
+      "ConfidencePoolFactory owner / UUPS upgrader",
+      "pool sponsor / pool owner within documented sponsor powers",
+      "outcome moderator / protocol DAO",
+      "SafeHarborRegistry and attack-registry owner/controller"
+    ],
+    "untrusted_roles": [
+      "staker",
+      "bonus contributor",
+      "arbitrary permissionless caller",
+      "claimant",
+      "named bounty attacker only for entitlement correctness",
+      "external receiver contract within the supported standard-token model"
+    ],
+    "hard_rejection": "Never generate, accept, validate, or promote a candidate whose exploit requires a trusted admin, sponsor, moderator, registry owner, or upgrader to be sneaky, malicious, compromised, colluding, or to intentionally misuse documented powers.",
+    "important_exception": "A real unprivileged authorization bypass, privilege escalation, missing role check, or bug triggered by an ordinary honest admin action remains in scope."
+  },
+  "registry_states": {
+    "pre_attack_withdraw_allowed": ["NOT_DEPLOYED", "NEW_DEPLOYMENT", "ATTACK_REQUESTED"],
+    "active_risk": ["UNDER_ATTACK", "PROMOTION_REQUESTED"],
+    "terminal": ["PRODUCTION", "CORRUPTED"],
+    "semantic_warning": "UNDER_ATTACK and PROMOTION_REQUESTED mean legally attackable by whitehats, not evidence of a breach. Only CORRUPTED proves a breach."
+  },
+  "key_parameters": {
+    "minimum_expiry_lead": "30 days",
+    "corrupted_claim_window": "180 days",
+    "moderator_corrupted_grace": "180 days",
+    "bonus_weight_exponent": 2,
+    "expiry_storage": "uint32, bounded by setters",
+    "pause_scope": "stake and contributeBonus only; withdrawal and all settlement paths remain live"
+  },
+  "high_value_entrypoints": {
+    "pool_inflows_and_exit": ["stake", "contributeBonus", "withdraw"],
+    "resolution_and_claims": ["flagOutcome", "claimSurvived", "claimExpired", "claimCorrupted", "claimAttackerBounty", "sweepUnclaimedCorrupted", "sweepUnclaimedBonus"],
+    "configuration": ["setRecoveryAddress", "setExpiry", "setPoolScope", "pause", "unpause"],
+    "permissionless_observation": ["pokeRiskWindow"],
+    "factory": ["initialize", "createPool", "setSafeHarborRegistry", "setPoolImplementation", "setDefaultOutcomeModerator", "setStakeTokenAllowed", "pause", "unpause", "upgradeToAndCall"]
+  },
+  "paid_scope": {
+    "critical_internal": "Catastrophic readily exploitable drain, insolvency, or complete irreversible failure of settlement; maps to CodeHawks High.",
+    "high": "Direct or nearly direct funds risk or severe core-function failure, weighted by likelihood.",
+    "medium": "Indirect or conditional funds risk or material protocol functionality/availability disruption.",
+    "low": "Concrete incorrect function or state behavior with minimal impact and no direct funds risk.",
+    "not_paid": ["Gas", "QA", "Informational", "style", "best practice without impact", "vague or unproved claims"]
+  },
+  "known_intentional_behavior": [
+    "EXPIRED resolution while an agreement remains in an active-risk state is correct.",
+    "Deposits during UNDER_ATTACK are deliberately allowed and receive near-zero late-entry bonus weight.",
+    "Moderator re-flag correction closes on first value-moving claim or sweep.",
+    "CORRUPTED moderator judgement is decoupled from local risk-window observation.",
+    "The no-risk-window post-expiry CORRUPTED race is accepted; moderator must flag promptly.",
+    "The 180-day automatic CORRUPTED backstop is deliberately scope-blind and staker-pessimistic.",
+    "First-observed terminal timing and the globalScore-zero fallback are accepted residual behavior.",
+    "Pool scope is a public commitment but moderator off-chain judgement decides whether corruption was in that pool scope.",
+    "SafeHarborRegistry is a trusted singleton and malicious repointing is outside the adversarial model.",
+    "CORRUPTED bounty/sweep functions are repeat-callable to recover later donations."
   ],
-  "deepwiki_audit_focus": [
-    "Treat this as the current protocol and reject stale Sable or Morpho context.",
-    "Prioritize concrete unprivileged extraction from the live proxy balance, quote-token balances, launched-token reserves, tax/dividend funds, LP fees, salt locks, migration proceeds, and claim paths.",
-    "Check payable launch/swap/buy paths against required msg.value, fee accounting, refund behavior, permit/quote-token branches, and external router or migrator callbacks.",
-    "Check bonding-curve reserve/supply math, reserve-token decimals, DEX threshold transitions, migration state, and packed token state for value-creating rounding or stale-state bugs.",
-    "Check claim/recovery functions only for attacker-triggerable overclaim or unauthorized redirection; admin compromise alone is not a valid critical path."
-  ],
-  "audit_notes": [
-    "Portal is a BSC transparent-style proxy with admin and implementation slot data captured.",
-    "The proxy held 1361.664283849714242664 BNB at the captured block, so custody and payable accounting paths are high priority.",
-    "This seed intentionally replaces stale Morpho/Sable live context and should be refreshed by running ACTE's upgraded scanner before a full DeepWiki campaign."
+  "proof_requirements": [
+    "Pin the exact scoped file, function, and commit.",
+    "Use an unprivileged attacker unless proving a genuine role bypass.",
+    "Provide a reachable transaction and registry-state sequence.",
+    "Identify the violated accounting, lifecycle, scope, finality, or availability invariant.",
+    "Classify impact and likelihood under CodeHawks High/Medium/Low rules.",
+    "Check docs/DESIGN.md and reject documented accepted behavior before promotion.",
+    "Prefer a coded Foundry PoC; do not treat DeepWiki output as proof."
   ]
 }
