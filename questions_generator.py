@@ -182,47 +182,10 @@ class GetQuestions:
         os.makedirs(question_directory, exist_ok=True)
 
         self.driver.get(url)
-        try:
-            all_questions = self.wait_for_response(30)
-        except RuntimeError:
-            if not question_gotten:
-                raise
-            print("Saved URL has no durable response; resubmitting prompt in this browser session")
-            self.submit_question(question_gotten)
-            timeout_seconds = int(os.environ.get("DEEPWIKI_REPORT_TIMEOUT", "600"))
-            all_questions = self.wait_for_response(timeout_seconds)
+        timeout_seconds = int(os.environ.get("DEEPWIKI_REPORT_TIMEOUT", "120"))
+        all_questions = self.wait_for_response(timeout_seconds)
 
         return self.save_question_chunks(all_questions, question_directory)
-
-    def submit_question(self, question_gotten):
-        self.driver.get(BASE_URL)
-        wait = WebDriverWait(self.driver, 120)
-        form = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'form')))
-        textarea = form.find_element(By.CSS_SELECTOR, 'textarea')
-
-        fast_button = wait.until(EC.element_to_be_clickable((
-            By.XPATH,
-            '//button[.//span[normalize-space(text())="Fast"]]',
-        )))
-        fast_button.click()
-        deep_research = wait.until(EC.element_to_be_clickable((
-            By.XPATH,
-            "//div[@role='menuitem' and .//span[normalize-space(text())='Deep Research']]",
-        )))
-        deep_research.click()
-
-        formatted_question = question_generator(question_gotten)
-        textarea.click()
-        textarea.clear()
-        self.driver.execute_script(
-            "arguments[0].value = arguments[1];", textarea, formatted_question
-        )
-        self.driver.execute_script(
-            "arguments[0].dispatchEvent(new Event('input', { bubbles: true }));",
-            textarea,
-        )
-        textarea.send_keys(".. ")
-        textarea.send_keys(Keys.ENTER)
 
     def wait_for_response(self, timeout_seconds):
         deadline = time.time() + timeout_seconds
@@ -258,11 +221,13 @@ class GetQuestions:
                         except Exception:
                             pass
 
-                time.sleep(15)
-                self.driver.refresh()
+                # The working reference B1J98V2UU3V1 keeps the same search page
+                # loaded while DeepWiki hydrates the saved Deep Research result.
+                # Refreshing here resets that loading state back to skeletons.
+                time.sleep(2)
             except Exception as exc:
                 last_error = exc
-                time.sleep(15)
+                time.sleep(2)
 
         debug_directory = Path("deepwiki_debug")
         debug_directory.mkdir(parents=True, exist_ok=True)
