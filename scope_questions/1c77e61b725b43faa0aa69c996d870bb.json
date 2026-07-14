@@ -1,0 +1,12 @@
+[
+  {
+    "question": "'File Name: src/ConfidencePool.sol -> Scope: Critical internal priority / CodeHawks High submission: catastrophic, readily exploitable loss or theft of most pool stake or bonus, protocol-wide insolvency, irreversible corruption of core settlement, or complete break of the pool's principal safety model by an unprivileged attacker.'",
+    "url": "https://deepwiki.com/search/-generate-all-valid-codehawks_7634980f-94d7-4abd-a7c5-991b71ff802f?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/ConfidencePoolFactory.sol -> Scope: Critical internal priority / CodeHawks High submission: catastrophic, readily exploitable loss or theft of most pool stake or bonus, protocol-wide insolvency, irreversible corruption of core settlement, or complete break of the pool's principal safety model by an unprivileged attacker.'",
+    "url": "https://deepwiki.com/search/-generate-all-valid-codehawks_a9b2b010-5ead-4192-9d60-cc91495088cf?mode=deep",
+    "questions_generated": false
+  }
+]
