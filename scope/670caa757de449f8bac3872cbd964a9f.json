@@ -1,0 +1,4 @@
+[
+  "'File Name: src/ConfidencePool.sol -> Scope: Medium: indirect or conditional fund risk, meaningful loss under specific reachable conditions, material unfair bonus distribution, broken lifecycle/state transitions, persistent denial of important protocol functionality, stuck claims or withdrawals, scope/expiry/risk-window corruption, or factory/clone behavior that materially violates documented guarantees.'",
+  "'File Name: src/ConfidencePoolFactory.sol -> Scope: Medium: indirect or conditional fund risk, meaningful loss under specific reachable conditions, material unfair bonus distribution, broken lifecycle/state transitions, persistent denial of important protocol functionality, stuck claims or withdrawals, scope/expiry/risk-window corruption, or factory/clone behavior that materially violates documented guarantees.'"
+]
