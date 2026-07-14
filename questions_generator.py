@@ -181,52 +181,65 @@ class GetQuestions:
         question_directory = os.environ.get('QUESTION_DIR', 'question')
         os.makedirs(question_directory, exist_ok=True)
 
-        try:
-            self.driver.get(url)
+        self.driver.get(url)
+        timeout_seconds = int(os.environ.get("DEEPWIKI_REPORT_TIMEOUT", "300"))
+        deadline = time.time() + timeout_seconds
+        last_error = None
 
-            wait = WebDriverWait(self.driver, 20)
-            #  this would click the copy button
-            copy_button_selector = (By.CSS_SELECTOR, '[aria-label="Copy"]')
-            all_copy_buttons = wait.until(
-                EC.presence_of_all_elements_located(copy_button_selector)
-            )
-            last_copy_button = all_copy_buttons[-1]
-            wait.until(EC.element_to_be_clickable(last_copy_button)).click()
-
-            xpath = "//div[@role='menuitem' and normalize-space(text())='Copy response']"
-            el = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
-            el.click()
-
-            clipboard_content = pyperclip.paste()
-
-            all_questions = self.get_question_content(clipboard_content)
-
+        while time.time() < deadline:
             try:
-                # Split into chunks of 25
-                chunk_size = 25
-                total_questions = len(all_questions)
+                buttons = self.driver.find_elements(By.CSS_SELECTOR, '[aria-label="Copy"]')
+                for button in reversed(buttons):
+                    try:
+                        button.click()
+                        menu_item = WebDriverWait(self.driver, 3).until(
+                            EC.element_to_be_clickable((
+                                By.XPATH,
+                                "//div[@role='menuitem' and normalize-space(text())='Copy response']",
+                            ))
+                        )
+                        pyperclip.copy("")
+                        menu_item.click()
+                        clipboard_content = WebDriverWait(self.driver, 10).until(
+                            lambda _: pyperclip.paste().strip() or False
+                        )
+                        all_questions = self.get_question_content(clipboard_content)
+                        if all_questions:
+                            return self.save_question_chunks(all_questions, question_directory)
+                        last_error = RuntimeError(
+                            f"Copy response returned {len(clipboard_content)} chars but no questions"
+                        )
+                    except Exception as exc:
+                        last_error = exc
+                        try:
+                            self.driver.find_element(By.TAG_NAME, "body").click()
+                        except Exception:
+                            pass
 
-                for i in range(0, total_questions, chunk_size):
-                    # Get a chunk of 25 questions
-                    chunk = all_questions[i:i + chunk_size]
+                time.sleep(15)
+                self.driver.refresh()
+            except Exception as exc:
+                last_error = exc
+                time.sleep(15)
 
-                    # Generate a unique filename
-                    filename = f"{str(uuid.uuid4())}.json".replace("-", "")
-                    filepath = os.path.join(question_directory, filename)
+        raise RuntimeError(
+            f"DeepWiki report was not ready or parseable after {timeout_seconds}s: {last_error}"
+        )
 
-                    # Save the chunk to a new file
-                    with open(filepath, 'w', encoding='utf-8') as f:
-                        json.dump(chunk, f, indent=2, ensure_ascii=False)
+    def save_question_chunks(self, all_questions, question_directory):
+        chunk_size = 25
+        total_questions = len(all_questions)
+        for i in range(0, total_questions, chunk_size):
+            chunk = all_questions[i:i + chunk_size]
+            filename = f"{str(uuid.uuid4())}.json".replace("-", "")
+            filepath = os.path.join(question_directory, filename)
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(chunk, f, indent=2, ensure_ascii=False)
+            print(f"Saved {len(chunk)} questions to {filepath}")
 
-                    print(f"Saved {len(chunk)} questions to {filepath}")
-
-                print(
-                    f"\nSuccessfully split {total_questions} questions into {((total_questions - 1) // chunk_size) + 1} files")
-            except Exception as a:
-                print(a)
-
-        except Exception as e:
-            print(f"An error occurred: {str(e)}")
+        chunk_count = (total_questions + chunk_size - 1) // chunk_size
+        print(f"Successfully split {total_questions} questions into {chunk_count} files")
+        return total_questions
 
     def get_question_content(self, clip_board_content: str) -> List[str]:
         """
