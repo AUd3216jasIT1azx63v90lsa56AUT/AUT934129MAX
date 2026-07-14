@@ -68,11 +68,20 @@ jobs:
       - name: Run reports with virtual display
         env:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          DEEPWIKI_REPORT_TIMEOUT: ${{ inputs.smoke_limit != '' && '60' || '600' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
           sudo apt-get install xclip
           xvfb-run --auto-servernum python run_questions_generator_report.py
+
+      - name: Upload DeepWiki diagnostic
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepwiki-workflow-3-debug-${{ github.run_id }}
+          path: deepwiki_debug/
+          if-no-files-found: ignore
 
 
       - name: Commit and push changes

@@ -264,6 +264,20 @@ class GetQuestions:
                 last_error = exc
                 time.sleep(15)
 
+        debug_directory = Path("deepwiki_debug")
+        debug_directory.mkdir(parents=True, exist_ok=True)
+        (debug_directory / "current_url.txt").write_text(
+            self.driver.current_url + "\n", encoding="utf-8"
+        )
+        (debug_directory / "page.html").write_text(
+            self.driver.page_source, encoding="utf-8"
+        )
+        (debug_directory / "body.txt").write_text(
+            self.driver.find_element(By.TAG_NAME, "body").text,
+            encoding="utf-8",
+        )
+        self.driver.save_screenshot(str(debug_directory / "page.png"))
+
         raise RuntimeError(
             f"DeepWiki report was not ready or parseable after {timeout_seconds}s: {last_error}"
         )
