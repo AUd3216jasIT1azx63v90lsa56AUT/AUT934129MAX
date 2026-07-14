@@ -68,7 +68,8 @@ jobs:
       - name: Run reports with virtual display
         env:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
-          DEEPWIKI_REPORT_TIMEOUT: ${{ inputs.smoke_limit != '' && '60' || '600' }}
+          DEEPWIKI_SAVED_TIMEOUT: '30'
+          DEEPWIKI_FAST_TIMEOUT: ${{ inputs.smoke_limit != '' && '180' || '300' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb

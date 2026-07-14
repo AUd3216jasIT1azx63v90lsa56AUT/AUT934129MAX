@@ -182,10 +182,43 @@ class GetQuestions:
         os.makedirs(question_directory, exist_ok=True)
 
         self.driver.get(url)
-        timeout_seconds = int(os.environ.get("DEEPWIKI_REPORT_TIMEOUT", "120"))
-        all_questions = self.wait_for_response(timeout_seconds)
+        try:
+            all_questions = self.wait_for_response(
+                int(os.environ.get("DEEPWIKI_SAVED_TIMEOUT", "30"))
+            )
+        except RuntimeError:
+            if not question_gotten:
+                raise
+            print("Saved Deep Research response did not finish; using bounded Fast recovery")
+            self.submit_fast_question(question_gotten)
+            all_questions = self.wait_for_response(
+                int(os.environ.get("DEEPWIKI_FAST_TIMEOUT", "180"))
+            )
 
         return self.save_question_chunks(all_questions, question_directory)
+
+    def submit_fast_question(self, question_gotten):
+        self.driver.get(BASE_URL)
+        wait = WebDriverWait(self.driver, 120)
+        form = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'form')))
+        textarea = form.find_element(By.CSS_SELECTOR, 'textarea')
+        wait.until(EC.presence_of_element_located((
+            By.XPATH,
+            '//button[.//span[normalize-space(text())="Fast"]]',
+        )))
+
+        formatted_question = question_generator(question_gotten)
+        textarea.click()
+        textarea.clear()
+        self.driver.execute_script(
+            "arguments[0].value = arguments[1];", textarea, formatted_question
+        )
+        self.driver.execute_script(
+            "arguments[0].dispatchEvent(new Event('input', { bubbles: true }));",
+            textarea,
+        )
+        textarea.send_keys(".. ")
+        textarea.send_keys(Keys.ENTER)
 
     def wait_for_response(self, timeout_seconds):
         deadline = time.time() + timeout_seconds
