@@ -1,0 +1,12 @@
+[
+  {
+    "question": "'File Name: src/ConfidencePool.sol -> Scope: Low: concrete, reachable incorrect behavior or state handling with minimal financial impact, no direct funds at risk, and a real protocol/user consequence; exclude gas, QA, informational, style, speculative, and purely theoretical observations.'",
+    "url": "https://deepwiki.com/search/-generate-all-valid-codehawks_0d9c7cc8-5528-49f6-b93b-e56a13710014?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/ConfidencePoolFactory.sol -> Scope: Low: concrete, reachable incorrect behavior or state handling with minimal financial impact, no direct funds at risk, and a real protocol/user consequence; exclude gas, QA, informational, style, speculative, and purely theoretical observations.'",
+    "url": "https://deepwiki.com/search/-generate-all-valid-codehawks_d59f7f5a-e793-4967-a911-291b7e6af9e9?mode=deep",
+    "questions_generated": false
+  }
+]
