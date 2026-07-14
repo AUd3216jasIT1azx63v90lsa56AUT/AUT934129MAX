@@ -176,6 +176,9 @@ Generate {BLUEPRINT["paid_impact_focus"]} security audit/fuzzing questions for t
 {_live_context_snapshot()}
 
 Rules:
+* Complete exactly one source-analysis pass, then immediately emit the final `questions` list.
+* Never narrate your reasoning, repeat your plan, reconsider the requested format, or draft an intermediate checklist.
+* Do not write phrases such as "let me", "I need to", "actually", "key observations", or "here are my final questions".
 * Treat `File Name:` as the exact file/module.
 * Treat `Scope:` as the ONLY paid impact to target.
 * Assume full repo context is accessible.
@@ -184,7 +187,7 @@ Rules:
 * Attacker is unprivileged: {BLUEPRINT["attacker_profile"]}.
 * Do not rely on admin compromise, malicious governance, leaked keys, impossible oracle values, pure external oracle failure, user mistakes, or unsupported third-party behavior.
 * Reject DoS/freeze/liveness/griefing questions unless the same path gives the attacker direct fund or reward extraction.
-* Generate 35 to 60 high-signal questions.
+* Generate exactly 40 high-signal questions, then stop.
 * At least 70% must be multi-step flow, invariant, fuzz, accounting, state-transition, or cross-module questions.
 * Every question must be testable later by local PoC, unit test, fuzz test, invariant test, or differential test.
 * Avoid generic checklist questions and repeated root causes.
@@ -200,7 +203,7 @@ Each question must include:
     "local proof idea"
 ])}
 
-Output only valid Python. No markdown. No explanations.
+Your first output token must be `questions` and your final output token must close the list. Output only valid Python. No markdown. No analysis. No explanations.
 
 questions = [
     "[File: {target_file}] [Function: symbol_or_module] Can an unprivileged ATTACKER_ACTION under PRECONDITIONS trigger CALL_SEQUENCE, violating INVARIANT, causing scoped impact: SCOPE_IMPACT? Local proof idea: add/run TEST_TYPE with PARAMETERS and assert EXPECTED_PROPERTY.",
