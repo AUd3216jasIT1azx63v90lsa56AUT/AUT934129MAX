@@ -9,8 +9,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import json
 import os
+import uuid
 
 from bot_runtime import batch_limit
+from question_report_parser import parse_question_content
 
 
 def get_scope_questions_pending():
@@ -21,19 +23,19 @@ def get_scope_questions_pending():
         list: A list of URLs found in all JSON files
     """
     scope_questions_pending_dir = os.environ.get("SCOPE_QUESTIONS_PENDING_DIR", "scope_questions_pending")
-    urls = []
+    report_items = []
 
     # Ensure directory exists
     if not os.path.exists(scope_questions_pending_dir):
         print(f"Directory {scope_questions_pending_dir} does not exist")
-        return urls
+        return report_items
 
     # Get all JSON files in the directory
     json_files = list(Path(scope_questions_pending_dir).glob("*.json"))
 
     if not json_files:
         print(f"No JSON files found in {scope_questions_pending_dir}")
-        return urls
+        return report_items
 
     # Process each JSON file
     for json_file in json_files:
@@ -45,16 +47,34 @@ def get_scope_questions_pending():
                 if isinstance(data, list):
                     for item in data:
                         if isinstance(item, dict) and 'url' in item:
-                            urls.append(item['url'])
+                            report_items.append(item)
                 elif isinstance(data, dict) and 'url' in data:
-                    urls.append(data['url'])
+                    report_items.append(data)
 
         except json.JSONDecodeError as e:
             print(f"Error parsing {json_file}: {e}")
         except Exception as e:
             print(f"Error processing {json_file}: {e}")
 
-    return urls
+    return report_items
+
+
+def save_stored_response(response_text):
+    questions = parse_question_content(response_text)
+    if not questions:
+        raise RuntimeError("Stored DeepWiki response contains no parseable questions")
+
+    question_directory = Path(os.environ.get("QUESTION_DIR", "question"))
+    question_directory.mkdir(parents=True, exist_ok=True)
+    for offset in range(0, len(questions), 25):
+        chunk = questions[offset:offset + 25]
+        output = question_directory / f"{uuid.uuid4().hex}.json"
+        output.write_text(
+            json.dumps(chunk, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        print(f"Saved {len(chunk)} questions to {output}")
+    return len(questions)
 
 
 def move_files_back_to_scope_questions():
@@ -106,23 +126,29 @@ def move_files_back_to_scope_questions():
 def main():
     report = None
     try:
-        pending_urls = get_scope_questions_pending()
-        total = len(pending_urls)
+        pending_items = get_scope_questions_pending()
+        total = len(pending_items)
 
         if total == 0:
             raise RuntimeError("No pending reports to generate")
 
-        print(f"Found {total} URLs needing reports")
+        print(f"Found {total} stored DeepWiki reports")
 
         counter = 0
         generated_questions = 0
         failures = []
         max_reports = batch_limit(500)
-        report = GetQuestions(teardown=True)
-        for i, url in enumerate(pending_urls):
+        for i, item in enumerate(pending_items):
+            url = item["url"]
             try:
                 print(f"[{i + 1}/{total}] Generating report for: {url}")
-                generated_questions += report.get_questions(url)
+                response_text = item.get("response", "")
+                if response_text:
+                    generated_questions += save_stored_response(response_text)
+                else:
+                    if report is None:
+                        report = GetQuestions(teardown=True)
+                    generated_questions += report.get_questions(url)
                 counter += 1
                 if counter >= max_reports:
                     break

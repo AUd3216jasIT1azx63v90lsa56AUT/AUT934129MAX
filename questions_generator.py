@@ -103,11 +103,18 @@ class GenerateQuestions:
 
                 textarea.send_keys(Keys.ENTER)
 
-                time.sleep(10)
+                def completed_response(driver):
+                    body_text = driver.find_element(By.TAG_NAME, "body").text
+                    if parse_question_content(body_text):
+                        return body_text
+                    return False
+
+                response_text = wait.until(completed_response)
                 current_url = self.driver.current_url
 
-                # add the current url to collections
-                self.save_to_questions(question_gotten, current_url)
+                # Persist the response itself. A later workflow runs in a fresh
+                # browser session and cannot rely on this search URL alone.
+                self.save_to_questions(question_gotten, current_url, response_text)
                 return current_url
             except Exception as a:
                 last_error = a
@@ -118,8 +125,8 @@ class GenerateQuestions:
 
         raise RuntimeError(f"DeepWiki question submission failed after 10 attempts: {last_error}")
 
-    def save_to_questions(self, question_gotten, url):
-        """Save question and URL to questions.json"""
+    def save_to_questions(self, question_gotten, url, response_text):
+        """Save the prompt, URL, and durable DeepWiki response."""
         collections_file = config("SCOPE_QUESTIONS_PATH")
 
         # Load existing data or start fresh
@@ -138,6 +145,7 @@ class GenerateQuestions:
         data.append({
             "question": question_gotten,
             "url": url,
+            "response": response_text,
             "questions_generated": False
         })
 
