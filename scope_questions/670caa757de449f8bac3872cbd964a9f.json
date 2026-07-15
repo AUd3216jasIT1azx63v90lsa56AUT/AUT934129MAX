@@ -1,0 +1,12 @@
+[
+  {
+    "question": "'File Name: src/ConfidencePool.sol -> Scope: Medium: indirect or conditional fund risk, meaningful loss under specific reachable conditions, material unfair bonus distribution, broken lifecycle/state transitions, persistent denial of important protocol functionality, stuck claims or withdrawals, scope/expiry/risk-window corruption, or factory/clone behavior that materially violates documented guarantees.'",
+    "url": "https://deepwiki.com/search/-generate-all-valid-codehawks_bc2dcdcd-67a9-412a-823e-14d9e1ccd676?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/ConfidencePoolFactory.sol -> Scope: Medium: indirect or conditional fund risk, meaningful loss under specific reachable conditions, material unfair bonus distribution, broken lifecycle/state transitions, persistent denial of important protocol functionality, stuck claims or withdrawals, scope/expiry/risk-window corruption, or factory/clone behavior that materially violates documented guarantees.'",
+    "url": "https://deepwiki.com/search/-generate-all-valid-codehawks_8b3443df-6f9c-428b-b8ad-bb183643a96c?mode=deep",
+    "questions_generated": false
+  }
+]
