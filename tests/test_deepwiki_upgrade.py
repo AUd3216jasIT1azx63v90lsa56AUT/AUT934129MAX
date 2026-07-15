@@ -258,6 +258,18 @@ class QuestionReportParsingTests(unittest.TestCase):
 
 
 class WorkflowChainTests(unittest.TestCase):
+    def test_stage_two_serializes_and_dispatches_only_once(self):
+        workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github/workflows/2_run_question_generator.yml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("question-generator-stage-2-${{ github.ref }}", workflow)
+        self.assertEqual(
+            workflow.count("actions/workflows/2_run_question_generator.yml/dispatches"),
+            1,
+        )
+
     def test_stage_verifier_and_remaining_inputs_use_expected_globs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
