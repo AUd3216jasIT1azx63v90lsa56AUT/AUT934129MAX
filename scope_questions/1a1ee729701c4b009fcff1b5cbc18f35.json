@@ -1,0 +1,12 @@
+[
+  {
+    "question": "'File Name: src/ConfidencePool.sol -> Scope: High: direct or nearly direct loss, theft, permanent freezing, or unauthorized redirection of staker principal, bonus funds, attacker bounty, or recovery funds; repeat claims; major accounting insolvency; unprivileged control of resolution; or severe breakage of core pool settlement with high or medium likelihood.'",
+    "url": "https://deepwiki.com/search/-generate-all-valid-codehawks_dbac277a-3d38-4d30-a7e4-923095e7b4dd?mode=deep",
+    "questions_generated": false
+  },
+  {
+    "question": "'File Name: src/ConfidencePoolFactory.sol -> Scope: High: direct or nearly direct loss, theft, permanent freezing, or unauthorized redirection of staker principal, bonus funds, attacker bounty, or recovery funds; repeat claims; major accounting insolvency; unprivileged control of resolution; or severe breakage of core pool settlement with high or medium likelihood.'",
+    "url": "https://deepwiki.com/search/-generate-all-valid-codehawks_2d1708dc-338a-41aa-adc1-cff13eb7517d?mode=deep",
+    "questions_generated": false
+  }
+]
