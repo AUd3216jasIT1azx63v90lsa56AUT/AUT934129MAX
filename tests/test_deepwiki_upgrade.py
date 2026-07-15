@@ -257,6 +257,20 @@ class QuestionReportParsingTests(unittest.TestCase):
         )
 
 
+class DeepWikiControlTests(unittest.TestCase):
+    def test_copy_controls_bypass_fixed_form_overlay(self):
+        source = (
+            Path(__file__).resolve().parents[1] / "questions_generator.py"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("self.click_deepwiki_control(button)", source)
+        self.assertIn("self.click_deepwiki_control(menu_item)", source)
+        self.assertIn("arguments[0].scrollIntoView", source)
+        self.assertIn('execute_script("arguments[0].click();", element)', source)
+        self.assertNotIn("                        button.click()", source)
+        self.assertNotIn("                        menu_item.click()", source)
+
+
 class WorkflowChainTests(unittest.TestCase):
     def test_stage_two_serializes_and_dispatches_only_once(self):
         workflow = (

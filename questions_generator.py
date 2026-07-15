@@ -229,7 +229,7 @@ class GetQuestions:
                 buttons = self.driver.find_elements(By.CSS_SELECTOR, '[aria-label="Copy"]')
                 for button in reversed(buttons):
                     try:
-                        button.click()
+                        self.click_deepwiki_control(button)
                         menu_item = WebDriverWait(self.driver, 3).until(
                             EC.element_to_be_clickable((
                                 By.XPATH,
@@ -237,7 +237,7 @@ class GetQuestions:
                             ))
                         )
                         pyperclip.copy("")
-                        menu_item.click()
+                        self.click_deepwiki_control(menu_item)
                         clipboard_content = WebDriverWait(self.driver, 10).until(
                             lambda _: pyperclip.paste().strip() or False
                         )
@@ -282,6 +282,14 @@ class GetQuestions:
         raise RuntimeError(
             f"DeepWiki report was not ready or parseable after {timeout_seconds}s: {last_error}"
         )
+
+    def click_deepwiki_control(self, element):
+        """Activate a control hidden beneath DeepWiki's fixed follow-up form."""
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', inline: 'center'});",
+            element,
+        )
+        self.driver.execute_script("arguments[0].click();", element)
 
     def save_question_chunks(self, all_questions, question_directory):
         chunk_size = 25
